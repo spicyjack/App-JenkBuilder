@@ -27,18 +27,12 @@ our $VERSION = '0.01';
  -h|--help          Shows this help text
 
  Other script options:
- -c|--catalog       Catalog spreadsheet file
- -d|--dumpdir       Dump file objects to this directory (Create if needed)
- --show-empty       Show empty cells (cells containing only whitespace)
- --show-tables      Show all parts tables worksheets
- --show-diagrams    Show all diagram worksheets
- --show-groups      Show all group worksheets
- --show-all         Show all worksheets
+ -c|--config        Path to config file that describes Jenkins job to run
 
  Example usage:
 
  # list the structure of an XLS file
- build_jenkins_project.pl --catalog /path/to/UralCatalog.xls \
+ build_jenkins_project.pl --config /path/to/config.txt
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
 build_jenkins_project.pl>.
@@ -49,14 +43,9 @@ our @options = (
     # script options
     q(verbose|v+),
     q(help|h),
+    q(colorize),
     # other options
-    q(catalog|c=s),
-    q(dumpdir|dir|dump|d=s),
-    q(show-empty|empty),
-    q(show-tables|tables),
-    q(show-groups|groups),
-    q(show-diagrams|diagrams),
-    q(show-all|all),
+    q(config|c=s),
 );
 
 =head1 DESCRIPTION
@@ -66,7 +55,7 @@ L<Log::Log4perl> logging module.
 
 =head1 OBJECTS
 
-=head2 Template::Config
+=head2 BuildJenkinsProject::Config
 
 An object used for storing configuration data.
 
@@ -75,9 +64,9 @@ An object used for storing configuration data.
 =cut
 
 #############################
-# Template::Config #
+# BuildJenkinsProject::Config #
 #############################
-package Template::Config;
+package BuildJenkinsProject::Config;
 use strict;
 use warnings;
 use Getopt::Long;
@@ -89,7 +78,7 @@ use POSIX qw(strftime);
 
 =item new( )
 
-Creates the L<Template::Config> object, and parses out options using
+Creates the L<BuildJenkinsProject::Config> object, and parses out options using
 L<Getopt::Long>.
 
 =cut
@@ -121,7 +110,7 @@ sub new {
 =item get($key)
 
 Returns the scalar value of the key passed in as C<key>, or C<undef> if the
-key does not exist in the L<Template::Config> object.
+key does not exist in the L<BuildJenkinsProject::Config> object.
 
 =cut
 
@@ -137,9 +126,9 @@ sub get {
 
 =item set( key => $value )
 
-Sets in the L<Template::Config> object the key/value pair passed in as
+Sets in the L<BuildJenkinsProject::Config> object the key/value pair passed in as
 arguments.  Returns the old value if the key already existed in the
-L<Template::Config> object, or C<undef> otherwise.
+L<BuildJenkinsProject::Config> object, or C<undef> otherwise.
 
 =cut
 
@@ -186,27 +175,27 @@ use Carp;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 use Log::Log4perl::Level;
 
-my %pps_type = (
-    1   => q|'Directory'|,
-    2   => q|'File (Data)'|,
-    5   => q|'Root'|,
-);
-
     binmode(STDOUT, ":utf8");
-    #my $catalog_file = q(/srv/www/purl/html/Ural_Catalog/UralCatalog.xls);
+    #my $config_file = q(/srv/www/purl/html/Ural_config/Uralconfig.xls);
     # create a logger object
-    my $config = Template::Config->new();
+    my $config = BuildJenkinsProject::Config->new();
 
     # set up the logger
-    #my $log_conf = qq(log4perl.rootLogger = WARN, Screen\n);
-    my $log_conf = qq(log4perl.rootLogger = INFO, Screen\n);
-#    if ( ! -t STDOUT ) {
-#        $log_conf .= qq(log4perl.appender.Screen = )
-#            . qq(Log::Log4perl::Appender::Screen\n);
-#    } else {
+    if ( defined $config->get(q(verbose)) && $config->get(q(verbose)) > 1 ) {
+        $log_conf = qq(log4perl.rootLogger = DEBUG, Screen\n);
+    } elsif ( defined $config->get(q(verbose))
+            && $config->get(q(verbose)) > 0) {
+        $log_conf = qq(log4perl.rootLogger = INFO, Screen\n);
+    } else {
+        $log_conf = qq(log4perl.rootLogger = WARN, Screen\n);
+    }
+    if ( -t STDOUT || $config->get(q(colorize)) ) {
         $log_conf .= qq(log4perl.appender.Screen = )
             . qq(Log::Log4perl::Appender::ScreenColoredLevels\n);
-#    } # if ( $Config->get(q(o_colorlog)) )
+    } else {
+        $log_conf .= qq(log4perl.appender.Screen = )
+            . qq(Log::Log4perl::Appender::Screen\n);
+    } # if ( $Config->get(q(o_colorlog)) )
 
     $log_conf .= qq(log4perl.appender.Screen.stderr = 1\n)
         . qq(log4perl.appender.Screen.utf8 = 1\n)
@@ -218,10 +207,10 @@ my %pps_type = (
     Log::Log4perl::init( \$log_conf );
     my $log = get_logger("");
 
-    $log->logdie(qq(Missing '--catalog' spreadsheet file argument))
-        unless ( defined $config->get(q(catalog)) );
-    $log->logdie(qq(Can't read catalog file ) . $config->get(q(catalog)) )
-        unless ( -r $config->get(q(catalog)) );
+    $log->logdie(qq(Missing '--config' file argument))
+        unless ( defined $config->get(q(config)) );
+    $log->logdie(qq(Can't read config file ) . $config->get(q(config)) )
+        unless ( -r $config->get(q(config)) );
 
     # print a nice banner
     $log->info(qq(Starting build_jenkins_project.pl, version $VERSION));
