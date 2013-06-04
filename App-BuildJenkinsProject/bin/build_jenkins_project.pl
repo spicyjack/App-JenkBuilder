@@ -29,14 +29,17 @@ our $VERSION = '0.01';
  Other script options:
  -c|--config        Path to config file that describes Jenkins job to run
  -a|--url|--address URL address to the Jenkins server
- -r|--auth-realm    HTTP Authentication "Realm"
- -u|--auth-user     HTTP Authentication user
- -p|--auth-pass     HTTP Authentication password
+ -u|--http-user     HTTP Authentication user
+ -p|--http-pass     HTTP Authentication password
 
  Example usage:
 
  # build a jenkinѕ project based on the contents of 'config.txt'
  build_jenkins_project.pl --config /path/to/config.txt
+
+ # same, but handle HTTP authentication
+ build_jenkins_project.pl --http-user=foo --http-pass=bar \
+    --config /path/to/config.txt
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
 build_jenkins_project.pl>.
@@ -51,9 +54,8 @@ our @options = (
     # other options
     q(config|c=s),
     q(url|address|a=s),
-    q(auth-realm|r=s),
-    q(auth-user|u=s),
-    q(auth-pass|p=s),
+    q(http-user|u=s),
+    q(http-pass|p=s),
 );
 
 =head1 DESCRIPTION
@@ -163,6 +165,8 @@ sub set {
 
 Returns a hash containing the parsed script arguments.
 
+=back
+
 =cut
 
 sub get_args {
@@ -226,6 +230,9 @@ use Log::Log4perl::Level;
         $log->warn(qq(If this isn't what you want, use the --url switch));
         $log->warn(qq(to pass a URL in to this script));
     }
+
+=begin comment
+
     use Net::Jenkins;
     my $jenk = Net::Jenkins->new( host => $jenkins_url);
     if ( defined $config->get(q(http-realm)) ) {
@@ -240,19 +247,46 @@ use Log::Log4perl::Level;
     }
 
     print $jenk->summary();
-    my $status = $jenk->current_status;
+    use Data::Dumper;
+    print Dumper $jenk;
 
-    if ( defined $status ) {
-        use Data::Dumper;
-        print Dumper {$status};
-    } else {
-        $log->logwarn(q(Error getting current Jenkins status; ));
-        $log->logdie($jenk->response_code . q(:) . $jenk->response_content);
-    }
+=end comment
 
 =cut
 
-=back
+    use LWP::UserAgent;
+    my $ua = LWP::UserAgent->new();
+    my $req = HTTP::Request->new(GET => $jenkins_url);
+    # The other alternative is to provide a subclass of LWP::UserAgent that
+    # overrides the get_basic_credentials() method. Study the lwp-request
+    # program for an example of this.
+    if ( defined $config->get(q(http-user))
+        && defined $config->get(q(http-pass)) ) {
+        $req->authorization_basic($config->get(q(http-user)),
+            $config->get(q(http-pass)));
+    }
+    my $response = $ua->request($req);
+    if ( $response->is_success) {
+        print $response->decoded_content();
+    } else {
+        die $response->status_line;
+    }
+    exit 0;
+    #print $jenk->summary();
+    #use Data::Dumper;
+    #print Dumper $jenk;
+
+    #my $status = $jenk->current_status;
+
+    #if ( defined $status ) {
+    #    use Data::Dumper;
+    #    print Dumper {$status};
+    #} else {
+    #    $log->logwarn(q(Error getting current Jenkins status; ));
+    #    $log->logdie($jenk->response_code . q(:) . $jenk->response_content);
+    #}
+
+
 
 =head1 AUTHOR
 
