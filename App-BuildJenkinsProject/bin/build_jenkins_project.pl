@@ -28,10 +28,14 @@ our $VERSION = '0.01';
 
  Other script options:
  -c|--config        Path to config file that describes Jenkins job to run
+ -a|--url|--address URL address to the Jenkins server
+ -r|--auth-realm    HTTP Authentication "Realm"
+ -u|--auth-user     HTTP Authentication user
+ -p|--auth-pass     HTTP Authentication password
 
  Example usage:
 
- # list the structure of an XLS file
+ # build a jenkinѕ project based on the contents of 'config.txt'
  build_jenkins_project.pl --config /path/to/config.txt
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
@@ -46,6 +50,10 @@ our @options = (
     q(colorize),
     # other options
     q(config|c=s),
+    q(url|address|a=s),
+    q(auth-realm|r=s),
+    q(auth-user|u=s),
+    q(auth-pass|p=s),
 );
 
 =head1 DESCRIPTION
@@ -176,15 +184,13 @@ use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 use Log::Log4perl::Level;
 
     binmode(STDOUT, ":utf8");
-    #my $config_file = q(/srv/www/purl/html/Ural_config/Uralconfig.xls);
-    # create a logger object
     my $config = BuildJenkinsProject::Config->new();
 
     # set up the logger
+    my $log_conf;
     if ( defined $config->get(q(verbose)) && $config->get(q(verbose)) > 1 ) {
         $log_conf = qq(log4perl.rootLogger = DEBUG, Screen\n);
-    } elsif ( defined $config->get(q(verbose))
-            && $config->get(q(verbose)) > 0) {
+    } elsif ( $config->get(q(verbose)) && $config->get(q(verbose)) == 1) {
         $log_conf = qq(log4perl.rootLogger = INFO, Screen\n);
     } else {
         $log_conf = qq(log4perl.rootLogger = WARN, Screen\n);
@@ -200,23 +206,49 @@ use Log::Log4perl::Level;
     $log_conf .= qq(log4perl.appender.Screen.stderr = 1\n)
         . qq(log4perl.appender.Screen.utf8 = 1\n)
         . qq(log4perl.appender.Screen.layout = PatternLayout\n)
-        #. q(log4perl.appender.Screen.layout.ConversionPattern = %d %p %m%n)
         . q(log4perl.appender.Screen.layout.ConversionPattern )
-        . qq(= %d{HH.mm.ss} %p -> %m%n\n);
+        . qq|= %d{HH.mm.ss} %p %L (%M{1}) %m%n\n|;
+        #. qq|= %d{HH.mm.ss} %p %F{1}:%L (%M{1}) %m%n\n|;
     # create a logger object, and prime the logfile for this session
     Log::Log4perl::init( \$log_conf );
     my $log = get_logger("");
-
-    $log->logdie(qq(Missing '--config' file argument))
-        unless ( defined $config->get(q(config)) );
-    $log->logdie(qq(Can't read config file ) . $config->get(q(config)) )
-        unless ( -r $config->get(q(config)) );
 
     # print a nice banner
     $log->info(qq(Starting build_jenkins_project.pl, version $VERSION));
     $log->info(qq(My PID is $$));
 
-    # FIXME script guts go here
+    my $jenkins_url = q(http://example.com/jenkins);
+
+    if ( defined $config->get(q(url)) ) {
+        $jenkins_url = $config->get(q(url));
+    } else {
+        $log->warn(qq(Using $jenkins_url for the Jenkins URL;));
+        $log->warn(qq(If this isn't what you want, use the --url switch));
+        $log->warn(qq(to pass a URL in to this script));
+    }
+    use Net::Jenkins;
+    my $jenk = Net::Jenkins->new( host => $jenkins_url);
+    if ( defined $config->get(q(http-realm)) ) {
+        my $ua = $jenk->user_agent();
+        $ua->credentials(
+            $jenkins_url,
+            $config->get(q(http-realm)),
+            $config->get(q(http-user)),
+            $config->get(q(http-pass)),
+        );
+        $jenk->user_agent($ua);
+    }
+
+    print $jenk->summary();
+    my $status = $jenk->current_status;
+
+    if ( defined $status ) {
+        use Data::Dumper;
+        print Dumper {$status};
+    } else {
+        $log->logwarn(q(Error getting current Jenkins status; ));
+        $log->logdie($jenk->response_code . q(:) . $jenk->response_content);
+    }
 
 =cut
 
