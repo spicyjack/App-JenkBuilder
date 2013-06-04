@@ -5,6 +5,8 @@ entire project.
 
 ## Todo ##
 - Generate this README or the regular docs from POD
+- Convert the `bin` file to use `Moose`, because both Jenkins modules use
+  `Moose` already, so it's already available to be used
 - Get Jenkins version via one of the Jenkins Perl frameworks (`Net::Jenkins`
   or `Jenkins::API`)
 - Come up with some kind of job manifest that tells this app what to build, and
