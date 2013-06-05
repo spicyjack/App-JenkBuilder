@@ -29,4 +29,12 @@ entire project.
         - dependencies can also be disabled if it's know that the dependency
           jobs are already up to date
 
+## Examples of commands ##
+
+    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
+      --url https://example.com/jenkins/job/chocolate-doom --verbose
+
+    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
+      --url https://example.com/jenkins/job/prboom --verbose
+
 vim: filetype=markdown shiftwidth=2 tabstop=2
