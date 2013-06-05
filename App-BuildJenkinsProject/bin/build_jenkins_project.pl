@@ -184,6 +184,13 @@ use strict;
 use warnings;
 use utf8;
 use Carp;
+use Data::Dumper;
+$Data::Dumper::Indent = 1;
+$Data::Dumper::Sortkeys = 1;
+$Data::Dumper::Terse = 1;
+use HTTP::Status qw(:constants); # provides HTTP_* constants
+use JSON;
+use LWP::UserAgent;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 use Log::Log4perl::Level;
 
@@ -254,23 +261,52 @@ use Log::Log4perl::Level;
 
 =cut
 
-    use LWP::UserAgent;
+    my $json = JSON->new();
+
     my $ua = LWP::UserAgent->new();
-    my $req = HTTP::Request->new(GET => $jenkins_url);
+    my $get_main = HTTP::Request->new(
+        GET => $jenkins_url . q(/api/json?pretty=true));
+    my $submit_job = HTTP::Request->new(
+        POST => $jenkins_url . q(/buildWithParameters));
     # The other alternative is to provide a subclass of LWP::UserAgent that
     # overrides the get_basic_credentials() method. Study the lwp-request
     # program for an example of this.
     if ( defined $config->get(q(http-user))
         && defined $config->get(q(http-pass)) ) {
-        $req->authorization_basic($config->get(q(http-user)),
+        $get_main->authorization_basic($config->get(q(http-user)),
+            $config->get(q(http-pass)));
+        $submit_job->authorization_basic($config->get(q(http-user)),
             $config->get(q(http-pass)));
     }
-    my $response = $ua->request($req);
+    my $response = $ua->request($get_main);
+
     if ( $response->is_success) {
-        print $response->decoded_content();
+        my $jenkins_version = $response->header(q(X-Jenkins));
+        $log->warn(qq(Jenkins is online... Jenkins version: $jenkins_version));
+        #print Dumper $json->decode($response->decoded_content());
     } else {
         die $response->status_line;
     }
+
+    my $post_json = <<'EOJ';
+    {"parameter": [
+        {"name": "PKG_NAME", "value": "chocolate-doom"},
+        {"name": "PKG_VERSION", "value": "1.7.0"},
+        {"name": "TARBALL_DIR", "value": "$HOME/source"}
+    ]}
+EOJ
+
+    $submit_job->content($post_json);
+    $response = $ua->request($submit_job);
+    if ( $response->code == HTTP_FOUND ) { # HTTP 302
+        $log->warn(qq(Job submission successful!));
+        if ( length($response->decoded_content()) > 0 ) {
+            print Dumper $response->decoded_content();
+        }
+    } else {
+        $log->logdie($response->status_line);
+    }
+
     exit 0;
     #print $jenk->summary();
     #use Data::Dumper;
