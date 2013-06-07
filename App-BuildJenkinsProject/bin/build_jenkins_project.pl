@@ -3,7 +3,8 @@
 # Copyright (c) 2013 by Brian Manning <cpan at xaoc dot org>
 
 # For support with this file, please file an issue on the GitHub issue tracker
-# for this project: https://github.com/spicyjack/public/issues
+# for this project:
+# https://github.com/spicyjack/App-BuildJenkinsProject/issues
 
 =head1 NAME
 
@@ -34,7 +35,7 @@ our $VERSION = '0.01';
 
  Example usage:
 
- # build a jenkinѕ project based on the contents of 'config.txt'
+ # build a Jenkins project based on the contents of 'config.txt'
  build_jenkins_project.pl --config /path/to/config.txt
 
  # same, but handle HTTP authentication
@@ -343,7 +344,7 @@ Brian Manning, C<< <cpan at xaoc dot org> >>
 Please report any bugs or feature requests to the GitHub issue tracker for
 this project:
 
-C<< <https://github.com/spicyjack//issues> >>.
+C<< <https://github.com/spicyjack/App-BuildJenkinsProject/issues> >>
 
 =head1 SUPPORT
 
