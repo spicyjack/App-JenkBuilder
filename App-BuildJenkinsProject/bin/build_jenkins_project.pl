@@ -279,11 +279,13 @@ use Log::Log4perl::Level;
             $config->get(q(http-pass)));
     }
     my $response = $ua->request($get_main);
-
+    my $next_build_number;
     if ( $response->is_success) {
         my $jenkins_version = $response->header(q(X-Jenkins));
         $log->warn(qq(Jenkins is online... Jenkins version: $jenkins_version));
-        #print Dumper $json->decode($response->decoded_content());
+        my $json_response = $json->decode($response->decoded_content());
+        $next_build_number = $json_response{q(nextBuildNumber)};
+        $log->warn(qq(Next build number: $next_build_number));
     } else {
         die $response->status_line;
     }
@@ -307,6 +309,14 @@ EOJ
         $log->logdie($response->status_line);
     }
 
+    my $job_status = HTTP::Request->new(
+        GET => $jenkins_url . qq(/$next_job_num/api/json?pretty=true));
+
+    JOB_STATUS: while (1) {
+        # do API requests here at intervals, and check 'result'
+        # https://shell.xaoc.org/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
+        last JOB_STATUS;
+    }
     exit 0;
     #print $jenk->summary();
     #use Data::Dumper;
