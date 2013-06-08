@@ -257,27 +257,40 @@ use Net::Jenkins;
 
     my $jenkins_url_scheme = q(http);
     my $jenkins_host = q(www.exmaple.com);
+    my $jenkins_port = 8080;
     my $jenkins_path = q(/jenkins);
-    my $jenkins_url;
+
 
     if ( $config->defined(q(host)) ) {
-        # FIXME munge things here
         my $munge_url = $config->get(q(host));
-        $log->warn(qq(original URL: $munge_url));
+        $log->debug(qq(original URL: $munge_url));
         my $web_url_regex = qr|^(https?)://([\w.-]+):?([0-9]+){0,5}/?(.*)$|;
         $munge_url =~ /$web_url_regex/;
-        $log->warn(qq(scheme: $1));
-        $log->warn(qq(host: $2));
-        $log->warn(qq(port: $3)) if ( defined $3 );
-        $log->warn(qq(path: $4));
+        $jenkins_url_scheme = $1;
+        $jenkins_host = $2;
+        # set port if defined...
+        if ( defined $3 ) {
+            $jenkins_port = $3;
+        # use 443 if port is not already defined
+        } elsif ( $jenkins_url_scheme eq q(https) ) {
+            $jenkins_port = 443;
+        }
+        $jenkins_path = $4;
+        if ( $log->is_debug ) {
+            $log->debug(qq(scheme: $jenkins_url_scheme));
+            $log->debug(qq(host: $jenkins_host));
+            $log->debug(qq(port: $jenkins_port));
+            $log->debug(qq(path: $jenkins_path));
+        }
     } else {
-        $log->warn(qq(Using $jenkins_url for the Jenkins URL;));
-        $log->warn(qq(If this isn't what you want, use the --url switch));
-        $log->warn(qq(to pass a URL in to this script));
-
+        $log->warn(qq(Script will use the default Jenkins URL!));
+        $log->warn(qq(If this isn't what you want, use the --host switch));
+        $log->warn(qq(to pass a different URL in to this script));
     }
+    my $jenkins_url = $jenkins_url_scheme . q(://) . $jenkins_host
+        . q(:) . $jenkins_port . q(/) . $jenkins_path;
+    $log->debug(qq(Recombined Jenkins URL: $jenkins_url));
 
-exit 0;
 =begin comment
 
     use Net::Jenkins;
@@ -302,24 +315,26 @@ exit 0;
 =cut
 
     my $json = JSON->new();
-
     my $jenkins = Net::Jenkins->new(
-        scheme          => q(https),
-        host            => q(shell.xaoc.org),
-        port            => 443,
-        jenkins_path    => q(jenkins),
+        scheme          => $jenkins_url_scheme,
+        host            => $jenkins_host,
+        port            => $jenkins_port,
+        jenkins_path    => $jenkins_path,
     );
 
+    $log->debug(q(Created Jenkins object with base_url: )
+        . $jenkins->get_base_url);
     # do we need to set credentials?
     my $http_headers;
-    if ( defined $config->get(q(http-user))
-        && defined $config->get(q(http-pass)) ) {
-        $http_headers = HTTP::Headers
-            ->new()
-            ->authorization_basic(
-                $config->get(q(http-user)),
-                $config->get(q(http-pass)),
-            );
+    if ( $config->defined(q(http-user)) && $config->defined(q(http-pass)) ) {
+        $log->debug(q(Creating HTTP::Headers object));
+        $log->debug(q(HTTP user: ) . $config->get(q(http-user)));
+        $log->debug(q(HTTP pass: ) . $config->get(q(http-pass)));
+        $http_headers = HTTP::Headers->new;
+        $http_headers->authorization_basic(
+            $config->get(q(http-user)),
+            $config->get(q(http-pass)),
+        );
     }
 
     # if we have custom headers, add them to the LWP::UA object attribute in
@@ -330,18 +345,20 @@ exit 0;
         $jenkins->user_agent($ua);
     }
     my $summary = $jenkins->summary();
-    if ( $jenkins->jenkins_version() ) {
-        $log->warn(qq(Jenkins is online... Jenkins version: )
-            . $jenkins->jenkins_version);
-    }
+    # FIXME $summary will be undef if the request failed; check for it
+    $log->warn(qq(Jenkins is online... Jenkins version: )
+        . $jenkins->jenkins_version);
     $log->warn(qq(Retrieving job info from )
         . $jenkins->job_url($config->get(q(job))) );
-    my %jenkins_job = $jenkins->get_job_details( $config->get(q(job)) );
-    print Dumper {%jenkins_job};
-    #my $next_build_number = $jenkins_job{q(nextBuildNumber)};
-    #$log->warn(qq(Next build number: $next_build_number));
+    my $jenkins_job_ref = $jenkins->get_job_details( $config->get(q(job)) );
+    if ( $log->is_debug && ref($jenkins_job_ref) ) {
+        $log->debug(Dumper {%{$jenkins_job_ref}});
+    }
+    my %jenkins_job = %{$jenkins_job_ref};
+    my $next_build_number = $jenkins_job{q(nextBuildNumber)};
+    $log->warn(qq(Next build number for job ') . $config->get(q(job))
+        . qq(': $next_build_number));
 
-exit 0;
     my $post_json = <<'EOJ';
     {"parameter": [
         {"name": "PKG_NAME", "value": "chocolate-doom"},
