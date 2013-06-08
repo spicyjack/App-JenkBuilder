@@ -344,7 +344,10 @@ use Net::Jenkins;
         $ua->default_headers($http_headers);
         $jenkins->user_agent($ua);
     }
-    my $summary = $jenkins->summary();
+
+    # XXX Do we need the summary for anything if we already know what job(s)
+    # we're looking for?
+    #my $summary = $jenkins->summary();
     # FIXME $summary will be undef if the request failed; check for it
     $log->warn(qq(Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
@@ -367,10 +370,8 @@ use Net::Jenkins;
     ]}
 EOJ
 
-=begin comment
-
-    $submit_job->content($post_json);
-    $response = $ua->request($submit_job);
+    my $response = $jenkins->post_url($jenkins->job_url($config->get(q(job)),
+        json => $post_json) );
     if ( $response->code == HTTP_FOUND ) { # HTTP 302
         $log->warn(qq(Job submission successful!));
         if ( length($response->decoded_content()) > 0 ) {
@@ -380,13 +381,17 @@ EOJ
         $log->logdie($response->status_line);
     }
 
-    my $job_status = HTTP::Request->new(
-        GET => $jenkins_url . qq(/$next_job_num/api/json?pretty=true));
+    my $job_status = $jenkins->get_job_details(
+        $config->get(q(job)),
+        $next_build_number,
+    );
 
     JOB_STATUS: while (1) {
+        $log->debug(Dumper $job_status);
+        sleep 5;
         # do API requests here at intervals, and check 'result'
         # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
-        last JOB_STATUS;
+        #last JOB_STATUS;
     }
     exit 0;
     #print $jenk->summary();
@@ -402,8 +407,6 @@ EOJ
     #    $log->logwarn(q(Error getting current Jenkins status; ));
     #    $log->logdie($jenk->response_code . q(:) . $jenk->response_content);
     #}
-
-=end comment
 
 =head1 AUTHOR
 
