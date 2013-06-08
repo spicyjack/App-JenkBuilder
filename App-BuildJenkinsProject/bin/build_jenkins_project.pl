@@ -28,7 +28,8 @@ our $VERSION = '0.01';
 
  Other script options:
  -c|--config        Path to config file that describes Jenkins job to run
- -a|--url|--address URL address to the Jenkins server
+ -s|--host|--server Hostname of the Jenkins server
+ -j|--job           Jenkins job to query/build
  -u|--http-user     HTTP Authentication user
  -p|--http-pass     HTTP Authentication password
 
@@ -53,7 +54,8 @@ our @options = (
     q(colorize),
     # other options
     q(config|c=s),
-    q(url|address|a=s),
+    q(job|j=s),
+    q(host|server|s=s),
     q(http-user|u=s),
     q(http-pass|p=s),
 );
@@ -136,8 +138,8 @@ sub get {
 
 =item set( key => $value )
 
-Sets in the L<BuildJenkinsProject::Config> object the key/value pair passed in as
-arguments.  Returns the old value if the key already existed in the
+Sets in the L<BuildJenkinsProject::Config> object the key/value pair passed in
+as arguments.  Returns the old value if the key already existed in the
 L<BuildJenkinsProject::Config> object, or C<undef> otherwise.
 
 =cut
@@ -175,6 +177,28 @@ sub get_args {
     return %{$self->{_args}};
 } # get_args
 
+=item defined($key)
+
+Returns "true" (C<1>) if the value for the key passed in as C<key> is
+C<defined>, and "false" (C<0>) if the value is undefined, or the key doesn't
+exist.
+
+=cut
+
+sub defined {
+    my $self = shift;
+    my $key = shift;
+    # turn the args reference back into a hash with a copy
+    my %args = %{$self->{_args}};
+
+    if ( exists $args{$key} ) {
+        if ( defined $args{$key} ) {
+            return 1;
+        }
+    }
+    return 0;
+} # sub get
+
 ################
 # package main #
 ################
@@ -188,11 +212,13 @@ use Data::Dumper;
 $Data::Dumper::Indent = 1;
 $Data::Dumper::Sortkeys = 1;
 $Data::Dumper::Terse = 1;
+use HTTP::Headers;
 use HTTP::Status qw(:constants); # provides HTTP_* constants
 use JSON;
 use LWP::UserAgent;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 use Log::Log4perl::Level;
+use Net::Jenkins;
 
     binmode(STDOUT, ":utf8");
     my $config = BuildJenkinsProject::Config->new();
@@ -228,16 +254,28 @@ use Log::Log4perl::Level;
     $log->info(qq(Starting build_jenkins_project.pl, version $VERSION));
     $log->info(qq(My PID is $$));
 
-    my $jenkins_url = q(http://example.com/jenkins);
+    my $jenkins_url_scheme = q(http);
+    my $jenkins_host = q(www.exmaple.com);
+    my $jenkins_path = q(/jenkins);
+    my $jenkins_url;
 
-    if ( defined $config->get(q(url)) ) {
-        $jenkins_url = $config->get(q(url));
+    if ( $config->defined(q(host)) ) {
+        # FIXME munge things here
+        my $munge_url = $config->get(q(host));
+        $log->warn(qq(original URL: $munge_url));
+        my $web_url_regex = qr!^([http|https]){1}://(.*){1}(/.*)?$!;
+        $munge_url =~ /$web_url_regex/;
+        $log->warn(qq(scheme: $1));
+        $log->warn(qq(host: $2));
+        $log->warn(qq(path: $3));
     } else {
         $log->warn(qq(Using $jenkins_url for the Jenkins URL;));
         $log->warn(qq(If this isn't what you want, use the --url switch));
         $log->warn(qq(to pass a URL in to this script));
+
     }
 
+exit 0;
 =begin comment
 
     use Net::Jenkins;
@@ -263,33 +301,45 @@ use Log::Log4perl::Level;
 
     my $json = JSON->new();
 
-    my $ua = LWP::UserAgent->new();
-    my $get_main = HTTP::Request->new(
-        GET => $jenkins_url . q(/api/json?pretty=true));
-    my $submit_job = HTTP::Request->new(
-        POST => $jenkins_url . q(/buildWithParameters));
-    # The other alternative is to provide a subclass of LWP::UserAgent that
-    # overrides the get_basic_credentials() method. Study the lwp-request
-    # program for an example of this.
+    my $jenkins = Net::Jenkins->new(
+        scheme          => q(https),
+        host            => q(shell.xaoc.org),
+        port            => 443,
+        jenkins_path    => q(jenkins),
+    );
+
+    # do we need to set credentials?
+    my $http_headers;
     if ( defined $config->get(q(http-user))
         && defined $config->get(q(http-pass)) ) {
-        $get_main->authorization_basic($config->get(q(http-user)),
-            $config->get(q(http-pass)));
-        $submit_job->authorization_basic($config->get(q(http-user)),
-            $config->get(q(http-pass)));
-    }
-    my $response = $ua->request($get_main);
-    my $next_build_number;
-    if ( $response->is_success) {
-        my $jenkins_version = $response->header(q(X-Jenkins));
-        $log->warn(qq(Jenkins is online... Jenkins version: $jenkins_version));
-        my $json_response = $json->decode($response->decoded_content());
-        $next_build_number = $json_response{q(nextBuildNumber)};
-        $log->warn(qq(Next build number: $next_build_number));
-    } else {
-        die $response->status_line;
+        $http_headers = HTTP::Headers
+            ->new()
+            ->authorization_basic(
+                $config->get(q(http-user)),
+                $config->get(q(http-pass)),
+            );
     }
 
+    # if we have custom headers, add them to the LWP::UA object attribute in
+    # the $jenkins object
+    if ( defined $http_headers ) {
+        my $ua = $jenkins->user_agent;
+        $ua->default_headers($http_headers);
+        $jenkins->user_agent($ua);
+    }
+    my $summary = $jenkins->summary();
+    if ( $jenkins->jenkins_version() ) {
+        $log->warn(qq(Jenkins is online... Jenkins version: )
+            . $jenkins->jenkins_version);
+    }
+    $log->warn(qq(Retrieving job info from )
+        . $jenkins->job_url($config->get(q(job))) );
+    my %jenkins_job = $jenkins->get_job_details( $config->get(q(job)) );
+    print Dumper {%jenkins_job};
+    #my $next_build_number = $jenkins_job{q(nextBuildNumber)};
+    #$log->warn(qq(Next build number: $next_build_number));
+
+exit 0;
     my $post_json = <<'EOJ';
     {"parameter": [
         {"name": "PKG_NAME", "value": "chocolate-doom"},
@@ -297,6 +347,8 @@ use Log::Log4perl::Level;
         {"name": "TARBALL_DIR", "value": "$HOME/source"}
     ]}
 EOJ
+
+=begin comment
 
     $submit_job->content($post_json);
     $response = $ua->request($submit_job);
@@ -314,7 +366,7 @@ EOJ
 
     JOB_STATUS: while (1) {
         # do API requests here at intervals, and check 'result'
-        # https://shell.xaoc.org/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
+        # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
         last JOB_STATUS;
     }
     exit 0;
@@ -332,7 +384,7 @@ EOJ
     #    $log->logdie($jenk->response_code . q(:) . $jenk->response_content);
     #}
 
-
+=end comment
 
 =head1 AUTHOR
 
