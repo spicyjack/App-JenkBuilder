@@ -264,11 +264,12 @@ use Net::Jenkins;
         # FIXME munge things here
         my $munge_url = $config->get(q(host));
         $log->warn(qq(original URL: $munge_url));
-        my $web_url_regex = qr!^([http|https]){1}://(.*){1}(/.*)?$!;
+        my $web_url_regex = qr|^(https?)://([\w.-]+):?([0-9]+){0,5}/?(.*)$|;
         $munge_url =~ /$web_url_regex/;
         $log->warn(qq(scheme: $1));
         $log->warn(qq(host: $2));
-        $log->warn(qq(path: $3));
+        $log->warn(qq(port: $3)) if ( defined $3 );
+        $log->warn(qq(path: $4));
     } else {
         $log->warn(qq(Using $jenkins_url for the Jenkins URL;));
         $log->warn(qq(If this isn't what you want, use the --url switch));
