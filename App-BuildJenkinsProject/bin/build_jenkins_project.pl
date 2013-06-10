@@ -118,7 +118,7 @@ sub new {
 
     # return this object to the caller
     return $self;
-} # sub new
+}
 
 =item get($key)
 
@@ -135,7 +135,7 @@ sub get {
 
     if ( exists $args{$key} ) { return $args{$key}; }
     return undef;
-} # sub get
+}
 
 =item set( key => $value )
 
@@ -162,7 +162,7 @@ sub set {
         $self->{_args} = \%args;
     } # if ( exists $args{$key} )
     return undef;
-} # sub get
+}
 
 =item get_args( )
 
@@ -176,7 +176,7 @@ sub get_args {
     my $self = shift;
     # hash-ify the return arguments
     return %{$self->{_args}};
-} # get_args
+}
 
 =item defined($key)
 
@@ -198,7 +198,7 @@ sub defined {
         }
     }
     return 0;
-} # sub get
+}
 
 ################
 # package main #
@@ -385,7 +385,7 @@ EOJ
         $config->get(q(job)),
         $next_build_number,
     );
-
+    exit 0;
     JOB_STATUS: while (1) {
         $log->debug(Dumper $job_status);
         sleep 5;
@@ -393,7 +393,7 @@ EOJ
         # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
         #last JOB_STATUS;
     }
-    exit 0;
+
     #print $jenk->summary();
     #use Data::Dumper;
     #print Dumper $jenk;
