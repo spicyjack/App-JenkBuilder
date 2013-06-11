@@ -37,4 +37,11 @@ entire project.
     perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
       --url https://example.com/jenkins/job/prboom --verbose
 
+    for JOB in $(echo libsdl libsdl-SDL_image libsdl-SDL_mixer
+      libsdl-SDL_net libsdl-SDL_ttf prboom); do
+      perl build_jenkins_project.pl \
+        --http-user=foo --http-pass=bar \
+        --host https://shell.xaoc.org/jenkins --job="${JOB}" --verbose;
+    done
+
 vim: filetype=markdown shiftwidth=2 tabstop=2
