@@ -33,6 +33,7 @@ our $VERSION = '0.01';
  -j|--job           Jenkins job to interact with
  -u|--http-user     HTTP Authentication user
  -p|--http-pass     HTTP Authentication password
+ --poll-duration    Poll the Jenkins API for job status at this interval
 
  Example usage:
 
@@ -59,6 +60,7 @@ our @options = (
     q(host|server|s=s),
     q(http-user|u=s),
     q(http-pass|p=s),
+    q(poll-duration=i),
 );
 
 =head1 DESCRIPTION
@@ -223,6 +225,11 @@ use Net::Jenkins;
 
     binmode(STDOUT, ":utf8");
     my $config = BuildJenkinsProject::Config->new();
+
+    # set a default poll interval of 5 seconds
+    if ( ! $config->defined(q(poll-interval)) ) {
+        $config->set(q(poll-interval) => 5);
+    }
 
     # set up the logger
     my $log_conf;
@@ -410,8 +417,8 @@ EOJ
         } else {
             $log->info($config->get(q(job)) . q(: Job has not started yet...));
         }
-        sleep 5;
-        $job_running_time += 5;
+        sleep $config->get(q(poll-interval));
+        $job_running_time += $config->get(q(poll-interval));
         # do API requests here at intervals, and check 'result'
         # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
         #last JOB_STATUS;
