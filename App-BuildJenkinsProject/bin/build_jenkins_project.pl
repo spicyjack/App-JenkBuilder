@@ -30,7 +30,7 @@ our $VERSION = '0.01';
  Other script options:
  -c|--config        Path to config file that describes Jenkins job to run
  -s|--host|--server Hostname of the Jenkins server
- -j|--job           Jenkins job to query/build
+ -j|--job           Jenkins job to interact with
  -u|--http-user     HTTP Authentication user
  -p|--http-pass     HTTP Authentication password
 
@@ -76,9 +76,9 @@ An object used for storing configuration data.
 
 =cut
 
-#############################
+###############################
 # BuildJenkinsProject::Config #
-#############################
+###############################
 package BuildJenkinsProject::Config;
 use strict;
 use warnings;
@@ -291,29 +291,6 @@ use Net::Jenkins;
         . q(:) . $jenkins_port . q(/) . $jenkins_path;
     $log->debug(qq(Recombined Jenkins URL: $jenkins_url));
 
-=begin comment
-
-    use Net::Jenkins;
-    my $jenk = Net::Jenkins->new( host => $jenkins_url);
-    if ( defined $config->get(q(http-realm)) ) {
-        my $ua = $jenk->user_agent();
-        $ua->credentials(
-            $jenkins_url,
-            $config->get(q(http-realm)),
-            $config->get(q(http-user)),
-            $config->get(q(http-pass)),
-        );
-        $jenk->user_agent($ua);
-    }
-
-    print $jenk->summary();
-    use Data::Dumper;
-    print Dumper $jenk;
-
-=end comment
-
-=cut
-
     my $json = JSON->new();
     my $jenkins = Net::Jenkins->new(
         scheme          => $jenkins_url_scheme,
@@ -345,22 +322,21 @@ use Net::Jenkins;
         $jenkins->user_agent($ua);
     }
 
-    # XXX Do we need the summary for anything if we already know what job(s)
-    # we're looking for?
-    #my $summary = $jenkins->summary();
+    # run a summary, to test connectivity, and to get the current version of
+    # Jenkins
+    my $summary = $jenkins->summary();
     # FIXME $summary will be undef if the request failed; check for it
     $log->warn(qq(Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
-    $log->warn(qq(Retrieving job info from )
-        . $jenkins->job_url($config->get(q(job))) );
+    $log->warn(qq(Retrieving job info from server;));
+    $log->warn(q( - ) .  $jenkins->job_url($config->get(q(job))) );
     my $jenkins_job_ref = $jenkins->get_job_details( $config->get(q(job)) );
     if ( $log->is_debug && ref($jenkins_job_ref) ) {
         $log->debug(Dumper {%{$jenkins_job_ref}});
     }
     my %jenkins_job = %{$jenkins_job_ref};
-    my $next_build_number = $jenkins_job{q(nextBuildNumber)};
-    $log->warn(qq(Next build number for job ') . $config->get(q(job))
-        . qq(': $next_build_number));
+    my $next_build_num = $jenkins_job{q(nextBuildNumber)};
+    $log->warn($config->get(q(job)) . qq(: Next build number: $next_build_num));
 
     my $post_json = <<'EOJ';
     {"parameter": [
@@ -370,10 +346,14 @@ use Net::Jenkins;
     ]}
 EOJ
 
-    my $response = $jenkins->post_url($jenkins->job_url($config->get(q(job)),
-        json => $post_json) );
+    my $response = $jenkins->post_url(
+        $jenkins->job_url($config->get(q(job))
+            . q(/buildWithParameters?delay=0sec),
+        json => $post_json),
+    );
     if ( $response->code == HTTP_FOUND ) { # HTTP 302
-        $log->warn(qq(Job submission successful!));
+        $log->warn($config->get(q(job)) . q(: Job submission successful!));
+        $log->warn($config->get(q(job)) . q(: Waiting for job to start...));
         if ( length($response->decoded_content()) > 0 ) {
             print Dumper $response->decoded_content();
         }
@@ -381,14 +361,57 @@ EOJ
         $log->logdie($response->status_line);
     }
 
-    my $job_status = $jenkins->get_job_details(
-        $config->get(q(job)),
-        $next_build_number,
-    );
-    exit 0;
+    # Dump the first JSON response after the job is running
+    my $job_started = 0;
+    my $job_running_time = 0;
     JOB_STATUS: while (1) {
-        $log->debug(Dumper $job_status);
+        # get the JSON message with the running job's details
+        my $job_status_json = $jenkins->get_job_details(
+            $config->get(q(job)) . qq(/$next_build_num)
+        );
+        if ( defined $job_status_json ) {
+            my %job_status = %{$job_status_json};
+            my $job_result = $job_status{result};
+            my $job_number = $job_status{number};
+            if ( defined $job_result ) {
+                $log->warn($config->get(q(job))
+                    . qq(: Job #$job_number complete; )
+                    . qq(result: $job_result));
+                # in milliseconds apparently
+                my $job_duration = $job_status{estimatedDuration} / 1000;
+                my ($duration_min, $duration_sec, $duration_string);
+                if ( $job_duration > 60 ) {
+                    $duration_min = int($job_duration / 60);
+                    $duration_sec = int($job_duration - ($duration_min * 60));
+                    $duration_string = "minutes";
+                } else {
+                    $duration_min = 0;
+                    $duration_sec = $job_duration;
+                    $duration_string = "seconds";
+                }
+                $log->warn($config->get(q(job)) . q(: Job duration: )
+                     . $duration_min . q(m )
+                     . $duration_sec . q(s));
+                last JOB_STATUS;
+            } else {
+                if ( ! $job_started ) {
+                    $log->warn($config->get(q(job))
+                        . qq(: Job #$job_number has started!));
+                    if ( $log->is_debug ) {
+                        $log->debug(Dumper $job_status_json);
+                    }
+                }
+                $job_started = 1;
+                $log->info($config->get(q(job)) .
+                    qq|: Job #$job_number running (Elapsed: |
+                    . sprintf('% 3u', $job_running_time)
+                    . q|s)|);
+            }
+        } else {
+            $log->info($config->get(q(job)) . q(: Job has not started yet...));
+        }
         sleep 5;
+        $job_running_time += 5;
         # do API requests here at intervals, and check 'result'
         # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
         #last JOB_STATUS;
