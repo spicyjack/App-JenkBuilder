@@ -335,14 +335,14 @@ use Net::Jenkins;
     # FIXME $summary will be undef if the request failed; check for it
     $log->warn(qq(Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
+    my $jenkins_job = Net::Jenkins::Job->new(
+        api     => $jenkins,
+        name    => $config->get(q(job)),
+        url     => $jenkins->job_url($config->get(q(job))),
+    );
     $log->warn(qq(Retrieving job info from server;));
-    $log->warn(q( - ) .  $jenkins->job_url($config->get(q(job))) );
-    my $jenkins_job_ref = $jenkins->get_job_details( $config->get(q(job)) );
-    if ( $log->is_debug && ref($jenkins_job_ref) ) {
-        $log->debug(Dumper {%{$jenkins_job_ref}});
-    }
-    my %jenkins_job = %{$jenkins_job_ref};
-    my $next_build_num = $jenkins_job{q(nextBuildNumber)};
+    $log->warn(q( - ) .  $jenkins_job->url() );
+    my $next_build_num = $jenkins_job->next_build_number();
     $log->warn($config->get(q(job)) . qq(: Next build number: $next_build_num));
 
     my $post_json = <<'EOJ';
@@ -423,20 +423,6 @@ EOJ
         # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
         #last JOB_STATUS;
     }
-
-    #print $jenk->summary();
-    #use Data::Dumper;
-    #print Dumper $jenk;
-
-    #my $status = $jenk->current_status;
-
-    #if ( defined $status ) {
-    #    use Data::Dumper;
-    #    print Dumper {$status};
-    #} else {
-    #    $log->logwarn(q(Error getting current Jenkins status; ));
-    #    $log->logdie($jenk->response_code . q(:) . $jenk->response_content);
-    #}
 
 =head1 AUTHOR
 
