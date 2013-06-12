@@ -41,7 +41,7 @@ entire project.
       libsdl-SDL_net libsdl-SDL_ttf prboom); do
       perl build_jenkins_project.pl \
         --http-user=foo --http-pass=bar \
-        --host https://shell.xaoc.org/jenkins --job="${JOB}" --verbose;
+        --host https://example.com/jenkins --job="${JOB}" --verbose;
     done
 
 vim: filetype=markdown shiftwidth=2 tabstop=2
