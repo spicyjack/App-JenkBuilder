@@ -155,12 +155,12 @@ sub set {
     my %args = %{$self->{_args}};
 
     if ( exists $args{$key} ) {
-        my $oldvalue = $args{$key};
-        $args{$key} = $value;
+        my $oldvalue   = $args{$key};
+        $args{$key}    = $value;
         $self->{_args} = \%args;
         return $oldvalue;
     } else {
-        $args{$key} = $value;
+        $args{$key}    = $value;
         $self->{_args} = \%args;
     } # if ( exists $args{$key} )
     return undef;
@@ -263,9 +263,9 @@ use Net::Jenkins;
     $log->info(qq(My PID is $$));
 
     my $jenkins_url_scheme = q(http);
-    my $jenkins_host = q(www.exmaple.com);
-    my $jenkins_port = 8080;
-    my $jenkins_path = q(/jenkins);
+    my $jenkins_host       = q(www.exmaple.com);
+    my $jenkins_port       = 8080;
+    my $jenkins_path       = q(/jenkins);
 
 
     if ( $config->defined(q(host)) ) {
