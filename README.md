@@ -44,4 +44,14 @@ entire project.
         --host https://example.com/jenkins --job="${JOB}" --verbose;
     done
 
+## Sample Manifest Format ##
+Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.
+
+    [JOB]
+    name : <job name>
+    version : <job version>
+    arch : <build architecture>
+    deps : <build dependencies; repeat deps as many times as needed>
+    deps : <order matters, closer to the top means it will get built first>
+
 vim: filetype=markdown shiftwidth=2 tabstop=2
