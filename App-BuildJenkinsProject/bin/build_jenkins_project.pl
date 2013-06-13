@@ -28,7 +28,7 @@ our $VERSION = '0.01';
  -h|--help          Shows this help text
 
  Other script options:
- -c|--config        Path to config file that describes Jenkins job to run
+ -c|--job-config    Path to config file that describes Jenkins job to run
  -s|--host|--server Hostname of the Jenkins server
  -j|--job           Jenkins job to interact with
  -u|--http-user     HTTP Authentication user
@@ -38,11 +38,11 @@ our $VERSION = '0.01';
  Example usage:
 
  # build a Jenkins project based on the contents of 'config.txt'
- build_jenkins_project.pl --config /path/to/config.txt
+ build_jenkins_project.pl --job-config /path/to/config.ini
 
  # same, but handle HTTP authentication
  build_jenkins_project.pl --http-user=foo --http-pass=bar \
-    --config /path/to/config.txt
+    --job-config /path/to/config.ini
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
 build_jenkins_project.pl>.
@@ -55,7 +55,7 @@ our @options = (
     q(help|h),
     q(colorize),
     # other options
-    q(config|c=s),
+    q(job-config|c=s),
     q(job|j=s),
     q(host|server|s=s),
     q(http-user|u=s),
@@ -69,6 +69,42 @@ B<build_jenkins_project.pl> - A Perl script template that uses the
 L<Log::Log4perl> logging module.
 
 =head1 OBJECTS
+
+=head2 BuildJenkinsProject::JobConfig
+
+An object used for storing Jenkins job data.  Inherits common functions from
+L<BuildJenkinsProject::JobConfig>.
+
+=head3 Object Methods
+
+=cut
+
+##################################
+# BuildJenkinsProject::JobConfig #
+##################################
+package BuildJenkinsProject::JobConfig;
+use strict;
+use warnings;
+use Config::Std;
+use Log::Log4perl qw(get_logger :no_extra_logdie_message);
+@ISA=qw(BuildJenkinsProject::Config);
+
+=over
+
+=item new( )
+
+Creates the L<BuildJenkinsProject::JobConfig> object, and parses the job
+configuration file.
+
+=cut
+
+sub new {
+    my $class = shift;
+    my $self = bless ({}, $class);
+    my $log = get_logger();
+
+
+}
 
 =head2 BuildJenkinsProject::Config
 
@@ -85,7 +121,6 @@ package BuildJenkinsProject::Config;
 use strict;
 use warnings;
 use Getopt::Long;
-use Log::Log4perl;
 use Pod::Usage;
 use POSIX qw(strftime);
 
@@ -170,8 +205,6 @@ sub set {
 
 Returns a hash containing the parsed script arguments.
 
-=back
-
 =cut
 
 sub get_args {
@@ -202,6 +235,10 @@ sub defined {
     return 0;
 }
 
+=back
+
+=cut
+
 ################
 # package main #
 ################
@@ -231,6 +268,10 @@ use Net::Jenkins;
         $config->set(q(poll-interval) => 5);
     }
 
+    my $job_config;
+    if ( $config->defined(q(job-config)) ) {
+        $job_config = BuildJenkinsProject::JobConfig->new();
+    }
     # set up the logger
     my $log_conf;
     if ( defined $config->get(q(verbose)) && $config->get(q(verbose)) > 1 ) {
