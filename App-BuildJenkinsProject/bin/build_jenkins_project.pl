@@ -70,19 +70,19 @@ L<Log::Log4perl> logging module.
 
 =head1 OBJECTS
 
-=head2 BuildJenkinsProject::JobConfig
+=head2 BuildJenkinsProject::Project
 
 An object used for storing Jenkins job data.  Inherits common functions from
-L<BuildJenkinsProject::JobConfig>.
+L<BuildJenkinsProject::Project>.
 
 =head3 Object Methods
 
 =cut
 
 ##################################
-# BuildJenkinsProject::JobConfig #
+# BuildJenkinsProject::Project #
 ##################################
-package BuildJenkinsProject::JobConfig;
+package BuildJenkinsProject::Project;
 use strict;
 use warnings;
 use Config::Std;
@@ -93,7 +93,7 @@ use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 
 =item new( )
 
-Creates the L<BuildJenkinsProject::JobConfig> object, and parses the job
+Creates the L<BuildJenkinsProject::Project> object, and parses the job
 configuration file.
 
 =cut
@@ -270,7 +270,7 @@ use Net::Jenkins;
 
     my $job_config;
     if ( $config->defined(q(job-config)) ) {
-        $job_config = BuildJenkinsProject::JobConfig->new();
+        $job_config = BuildJenkinsProject::Project->new();
     }
     # set up the logger
     my $log_conf;
