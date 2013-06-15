@@ -1,7 +1,6 @@
 package App::BuildJenkinsProject::Project;
-
-use warnings;
-use strict;
+use Moose;
+use Config::Std;
 
 =head1 NAME
 
@@ -16,7 +15,6 @@ Version 0.01
 
 our $VERSION = '0.01';
 
-
 =head1 SYNOPSIS
 
 Describes how to build a set of Jenkins jobs.
@@ -27,21 +25,42 @@ Perhaps a little code snippet.
 
     my $project = App::BuildJenkinsProject::Project->new(config => $config);
     print q(Project: ) . $project->name() . q( has );
-    print $project->
+    say scalar($project->deps()) . q( dependencies.);
     ...
 
-=head1 EXPORT
+=head1 OBJECT ATTRIBUTES
 
-A list of functions that can be exported.  You can delete this section
-if you don't export anything, such as for a purely object-oriented module.
+=head2 project
 
-=head1 SUBROUTINES/METHODS
-
-=head2 function1
+C<App::BuildJenkinsProject::Job> object that is the focus of the "project".
 
 =cut
 
-sub function1 {
+has project => (
+    is  => q(rw),
+    isa => q(App::BuildJenkinsProject::Job),
+);
+
+has dependent_jobs => (
+    is  => q(rw),
+    isa => q(ArrayRef[App::BuildJenkinsProject::Job]),
+);
+
+=head1 OBJECT METHODS
+
+=head2 load_project
+
+=cut
+
+sub load {
+    my $self = shift;
+    my %args = @_;
+
+    die(q|Missing filename of project to load (filename => $filename)|)
+        unless ( defined $args{filename} );
+    die(q|Can't read project file|)
+        unless ( -r $args{filename} );
+
 }
 
 =head2 function2
