@@ -45,10 +45,13 @@ entire project.
     done
 
 ## Sample Manifest Format ##
-Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.
+Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.  The job
+with the dependencies is an `App::BuildJenkinsProject::Job` object.  Any
+dependencies of that job are also `App::BuildJenkinsProject::Job` objects.
 
-    [JOB]
-    name : <job name>
+
+    [PROJECT]
+    name : <project name, same name as the corresponding Jenkins job>
     version : <job version>
     arch : <build architecture>
     deps : <build dependencies; repeat deps as many times as needed>
