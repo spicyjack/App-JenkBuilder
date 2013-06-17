@@ -72,16 +72,16 @@ L<Log::Log4perl> logging module.
 
 =head2 JenkBuilder::Project
 
-An object used for storing Jenkins job data.  Inherits common functions from
-L<JenkBuilder::Project>.
+An object used for storing information about a Jenkins "project", or a
+complete set of jobs that can make a final product.
 
 =head3 Object Methods
 
 =cut
 
-##################################
+########################
 # JenkBuilder::Project #
-##################################
+########################
 package JenkBuilder::Project;
 use strict;
 use warnings;
@@ -114,9 +114,9 @@ An object used for storing configuration data.
 
 =cut
 
-###############################
+#######################
 # JenkBuilder::Config #
-###############################
+#######################
 package JenkBuilder::Config;
 use strict;
 use warnings;
