@@ -5,7 +5,8 @@ use Config::Std;
 =head1 NAME
 
 App::JenkBuilder::Project - Describes how to build a given "project",
-or a collection of jobs in C<Jenkins>.
+or a collection of jobs in C<Jenkins> that are combined to build a final
+product.
 
 =head1 VERSION
 
@@ -18,8 +19,6 @@ our $VERSION = '0.01';
 =head1 SYNOPSIS
 
 Describes how to build a set of Jenkins jobs.
-
-Perhaps a little code snippet.
 
     use App::JenkBuilder::Project;
 
