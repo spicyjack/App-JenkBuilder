@@ -4,7 +4,7 @@
 
 # For support with this file, please file an issue on the GitHub issue tracker
 # for this project:
-# https://github.com/spicyjack/App-BuildJenkinsProject/issues
+# https://github.com/spicyjack/App-JenkBuilder/issues
 
 =head1 NAME
 
@@ -70,30 +70,30 @@ L<Log::Log4perl> logging module.
 
 =head1 OBJECTS
 
-=head2 BuildJenkinsProject::Project
+=head2 JenkBuilder::Project
 
 An object used for storing Jenkins job data.  Inherits common functions from
-L<BuildJenkinsProject::Project>.
+L<JenkBuilder::Project>.
 
 =head3 Object Methods
 
 =cut
 
 ##################################
-# BuildJenkinsProject::Project #
+# JenkBuilder::Project #
 ##################################
-package BuildJenkinsProject::Project;
+package JenkBuilder::Project;
 use strict;
 use warnings;
 use Config::Std;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
-@ISA=qw(BuildJenkinsProject::Config);
+@ISA=qw(JenkBuilder::Config);
 
 =over
 
 =item new( )
 
-Creates the L<BuildJenkinsProject::Project> object, and parses the job
+Creates the L<JenkBuilder::Project> object, and parses the job
 configuration file.
 
 =cut
@@ -106,7 +106,7 @@ sub new {
 
 }
 
-=head2 BuildJenkinsProject::Config
+=head2 JenkBuilder::Config
 
 An object used for storing configuration data.
 
@@ -115,9 +115,9 @@ An object used for storing configuration data.
 =cut
 
 ###############################
-# BuildJenkinsProject::Config #
+# JenkBuilder::Config #
 ###############################
-package BuildJenkinsProject::Config;
+package JenkBuilder::Config;
 use strict;
 use warnings;
 use Getopt::Long;
@@ -128,7 +128,7 @@ use POSIX qw(strftime);
 
 =item new( )
 
-Creates the L<BuildJenkinsProject::Config> object, and parses out options using
+Creates the L<JenkBuilder::Config> object, and parses out options using
 L<Getopt::Long>.
 
 =cut
@@ -160,7 +160,7 @@ sub new {
 =item get($key)
 
 Returns the scalar value of the key passed in as C<key>, or C<undef> if the
-key does not exist in the L<BuildJenkinsProject::Config> object.
+key does not exist in the L<JenkBuilder::Config> object.
 
 =cut
 
@@ -176,9 +176,9 @@ sub get {
 
 =item set( key => $value )
 
-Sets in the L<BuildJenkinsProject::Config> object the key/value pair passed in
+Sets in the L<JenkBuilder::Config> object the key/value pair passed in
 as arguments.  Returns the old value if the key already existed in the
-L<BuildJenkinsProject::Config> object, or C<undef> otherwise.
+L<JenkBuilder::Config> object, or C<undef> otherwise.
 
 =cut
 
@@ -261,7 +261,7 @@ use Log::Log4perl::Level;
 use Net::Jenkins;
 
     binmode(STDOUT, ":utf8");
-    my $config = BuildJenkinsProject::Config->new();
+    my $config = JenkBuilder::Config->new();
 
     # set a default poll interval of 5 seconds
     if ( ! $config->defined(q(poll-interval)) ) {
@@ -270,7 +270,7 @@ use Net::Jenkins;
 
     my $job_config;
     if ( $config->defined(q(job-config)) ) {
-        $job_config = BuildJenkinsProject::Project->new();
+        $job_config = JenkBuilder::Project->new();
     }
     # set up the logger
     my $log_conf;
@@ -474,7 +474,7 @@ Brian Manning, C<< <cpan at xaoc dot org> >>
 Please report any bugs or feature requests to the GitHub issue tracker for
 this project:
 
-C<< <https://github.com/spicyjack/App-BuildJenkinsProject/issues> >>
+C<< <https://github.com/spicyjack/App-JenkBuilder/issues> >>
 
 =head1 SUPPORT
 

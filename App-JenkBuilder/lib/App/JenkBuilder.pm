@@ -1,11 +1,11 @@
-package App::BuildJenkinsProject;
+package App::JenkBuilder;
 
 use warnings;
 use strict;
 
 =head1 NAME
 
-App::BuildJenkinsProject - The great new App::BuildJenkinsProject!
+App::JenkBuilder - The great new App::JenkBuilder!
 
 =head1 VERSION
 
@@ -22,9 +22,9 @@ Quick summary of what the module does.
 
 Perhaps a little code snippet.
 
-    use App::BuildJenkinsProject;
+    use App::JenkBuilder;
 
-    my $foo = App::BuildJenkinsProject->new();
+    my $foo = App::JenkBuilder->new();
     ...
 
 =head1 EXPORT
@@ -55,7 +55,7 @@ Brian Manning, C<< <xaoc at cpan dot org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests to C<bug-app-buildjenkinsproject at rt.cpan.org>, or through
-the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=App-BuildJenkinsProject>.  I will be notified, and then you'll
+the web interface at L<http://rt.cpan.org/NoAuth/ReportBug.html?Queue=App-JenkBuilder>.  I will be notified, and then you'll
 automatically be notified of progress on your bug as I make changes.
 
 
@@ -65,7 +65,7 @@ automatically be notified of progress on your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc App::BuildJenkinsProject
+    perldoc App::JenkBuilder
 
 
 You can also look for information at:
@@ -74,19 +74,19 @@ You can also look for information at:
 
 =item * RT: CPAN's request tracker
 
-L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-BuildJenkinsProject>
+L<http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-JenkBuilder>
 
 =item * AnnoCPAN: Annotated CPAN documentation
 
-L<http://annocpan.org/dist/App-BuildJenkinsProject>
+L<http://annocpan.org/dist/App-JenkBuilder>
 
 =item * CPAN Ratings
 
-L<http://cpanratings.perl.org/d/App-BuildJenkinsProject>
+L<http://cpanratings.perl.org/d/App-JenkBuilder>
 
 =item * Search CPAN
 
-L<http://search.cpan.org/dist/App-BuildJenkinsProject/>
+L<http://search.cpan.org/dist/App-JenkBuilder/>
 
 =back
 
@@ -107,4 +107,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of App::BuildJenkinsProject
+1; # End of App::JenkBuilder

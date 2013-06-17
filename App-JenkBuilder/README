@@ -1,4 +1,4 @@
-App-BuildJenkinsProject
+App-JenkBuilder
 
 The README is used to introduce the module and provide instructions on
 how to install the module, any machine dependencies it may have (for
@@ -26,21 +26,21 @@ SUPPORT AND DOCUMENTATION
 After installing, you can find documentation for this module with the
 perldoc command.
 
-    perldoc App::BuildJenkinsProject
+    perldoc App::JenkBuilder
 
 You can also look for information at:
 
     RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-BuildJenkinsProject
+        http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-JenkBuilder
 
     AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/App-BuildJenkinsProject
+        http://annocpan.org/dist/App-JenkBuilder
 
     CPAN Ratings
-        http://cpanratings.perl.org/d/App-BuildJenkinsProject
+        http://cpanratings.perl.org/d/App-JenkBuilder
 
     Search CPAN
-        http://search.cpan.org/dist/App-BuildJenkinsProject/
+        http://search.cpan.org/dist/App-JenkBuilder/
 
 
 LICENSE AND COPYRIGHT

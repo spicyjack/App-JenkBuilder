@@ -1,10 +1,10 @@
-package App::BuildJenkinsProject::Project;
+package App::JenkBuilder::Project;
 use Moose;
 use Config::Std;
 
 =head1 NAME
 
-App::BuildJenkinsProject::Project - Describes how to build a given "project",
+App::JenkBuilder::Project - Describes how to build a given "project",
 or a collection of jobs in C<Jenkins>.
 
 =head1 VERSION
@@ -21,9 +21,9 @@ Describes how to build a set of Jenkins jobs.
 
 Perhaps a little code snippet.
 
-    use App::BuildJenkinsProject::Project;
+    use App::JenkBuilder::Project;
 
-    my $project = App::BuildJenkinsProject::Project->new(config => $config);
+    my $project = App::JenkBuilder::Project->new(config => $config);
     print q(Project: ) . $project->name() . q( has );
     say scalar($project->deps()) . q( dependencies.);
     ...
@@ -32,18 +32,18 @@ Perhaps a little code snippet.
 
 =head2 project
 
-C<App::BuildJenkinsProject::Job> object that is the focus of the "project".
+C<App::JenkBuilder::Job> object that is the focus of the "project".
 
 =cut
 
 has project => (
     is  => q(rw),
-    isa => q(App::BuildJenkinsProject::Job),
+    isa => q(App::JenkBuilder::Job),
 );
 
 has dependent_jobs => (
     is  => q(rw),
-    isa => q(ArrayRef[App::BuildJenkinsProject::Job]),
+    isa => q(ArrayRef[App::JenkBuilder::Job]),
 );
 
 =head1 OBJECT METHODS
@@ -77,7 +77,7 @@ Brian Manning, C<< <xaoc at cpan dot org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests using the GitHub issue tracker at
-L<https://github.com/spicyjack/App-BuildJenkinsProject/issues>.
+L<https://github.com/spicyjack/App-JenkBuilder/issues>.
 I will be notified, and then you'll automatically be notified of progress on
 your bug as I make changes.
 
@@ -85,7 +85,7 @@ your bug as I make changes.
 
 You can find documentation for this module with the perldoc command.
 
-    perldoc App::BuildJenkinsProject::Project
+    perldoc App::JenkBuilder::Project
 
 
 You can also look for information at:
@@ -94,11 +94,11 @@ You can also look for information at:
 
 =item * GitHub project page
 
-L<https://github.com/spicyjack/App-BuildJenkinsProject>
+L<https://github.com/spicyjack/App-JenkBuilder>
 
 =item * GitHub issues page
 
-L<https://github.com/spicyjack/App-BuildJenkinsProject/issues>
+L<https://github.com/spicyjack/App-JenkBuilder/issues>
 
 =back
 
@@ -116,4 +116,4 @@ See http://dev.perl.org/licenses/ for more information.
 
 =cut
 
-1; # End of App::BuildJenkinsProject::Project
+1; # End of App::JenkBuilder::Project

@@ -3,10 +3,10 @@ use warnings;
 use ExtUtils::MakeMaker;
 
 WriteMakefile(
-    NAME                => 'App::BuildJenkinsProject',
+    NAME                => 'App::JenkBuilder',
     AUTHOR              => q{Brian Manning <xaoc at cpan dot org>},
-    VERSION_FROM        => 'lib/App/BuildJenkinsProject.pm',
-    ABSTRACT_FROM       => 'lib/App/BuildJenkinsProject.pm',
+    VERSION_FROM        => 'lib/App/JenkBuilder.pm',
+    ABSTRACT_FROM       => 'lib/App/JenkBuilder.pm',
     ($ExtUtils::MakeMaker::VERSION >= 6.3002
       ? ('LICENSE'=> 'perl')
       : ()),
@@ -15,5 +15,5 @@ WriteMakefile(
         'Test::More' => 0,
     },
     dist                => { COMPRESS => 'gzip -9f', SUFFIX => 'gz', },
-    clean               => { FILES => 'App-BuildJenkinsProject-*' },
+    clean               => { FILES => 'App-JenkBuilder-*' },
 );

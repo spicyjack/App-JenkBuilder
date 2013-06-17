@@ -1,4 +1,4 @@
-# App::BuildJenkinsProject #
+# App::JenkBuilder #
 
 Runs Jenkins jobs specified in a configuration file in order to build an
 entire project.
@@ -46,8 +46,8 @@ entire project.
 
 ## Sample Manifest Format ##
 Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.  The job
-with the dependencies is an `App::BuildJenkinsProject::Job` object.  Any
-dependencies of that job are also `App::BuildJenkinsProject::Job` objects.
+with the dependencies is an `App::JenkBuilder::Job` object.  Any
+dependencies of that job are also `App::JenkBuilder::Job` objects.
 
 
     [PROJECT]
