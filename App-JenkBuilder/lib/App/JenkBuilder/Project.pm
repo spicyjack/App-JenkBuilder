@@ -45,9 +45,18 @@ has dependent_jobs => (
     isa => q(ArrayRef[App::JenkBuilder::Job]),
 );
 
+has _config => (
+    is  => q(rw),
+    isa => q(Object),
+);
+
 =head1 OBJECT METHODS
 
-=head2 load_project
+=head2 load_project(config_file => $filename)
+
+Loads the file passed in as C<config_file> and tries to parse it.  The format
+of the configuration file is described in the
+L<Config::Std|https://metacpan.org/module/Config::Std> module.
 
 =cut
 
@@ -55,11 +64,17 @@ sub load {
     my $self = shift;
     my %args = @_;
 
+    my $config_file = $args{config_file};
     die(q|Missing filename of project to load (filename => $filename)|)
-        unless ( defined $args{filename} );
-    die(q|Can't read project file|)
-        unless ( -r $args{filename} );
+        unless ( defined $config_file );
+    die(qq|Can't read project file $config_file|)
+        unless ( -r $config_file );
 
+    # load the config file from disk
+    my %config;
+    read_config($config_file => %config);
+    $self->_config(\%config);
+    $self->name = $config{name};
 }
 
 =head2 function2
@@ -76,9 +91,9 @@ Brian Manning, C<< <xaoc at cpan dot org> >>
 =head1 BUGS
 
 Please report any bugs or feature requests using the GitHub issue tracker at
-L<https://github.com/spicyjack/App-JenkBuilder/issues>.
-I will be notified, and then you'll automatically be notified of progress on
-your bug as I make changes.
+L<https://github.com/spicyjack/App-JenkBuilder/issues>.  I will be notified,
+and then you'll automatically be notified of progress on your bug as I make
+changes.
 
 =head1 SUPPORT
 
