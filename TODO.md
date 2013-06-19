@@ -1,9 +1,4 @@
-# App::JenkBuilder #
-
-Runs Jenkins jobs specified in a configuration file in order to build an
-entire project.
-
-## Todo ##
+# App::JenkBuilder TODOs ##
 - Generate this README or the regular docs from POD
 - Convert the `bin` file to use `Moose`, because both Jenkins modules use
   `Moose` already, so it's already available to be used
@@ -28,33 +23,5 @@ entire project.
       - job dependencies that need to be built prior to this job
         - dependencies can also be disabled if it's know that the dependency
           jobs are already up to date
-
-## Examples of commands ##
-
-    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
-      --url https://example.com/jenkins/job/chocolate-doom --verbose
-
-    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
-      --url https://example.com/jenkins/job/prboom --verbose
-
-    for JOB in $(echo libsdl libsdl-SDL_image libsdl-SDL_mixer
-      libsdl-SDL_net libsdl-SDL_ttf prboom); do
-      perl build_jenkins_project.pl \
-        --http-user=foo --http-pass=bar \
-        --host https://example.com/jenkins --job="${JOB}" --verbose;
-    done
-
-## Sample Manifest Format ##
-Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.  The job
-with the dependencies is an `App::JenkBuilder::Job` object.  Any
-dependencies of that job are also `App::JenkBuilder::Job` objects.
-
-
-    [PROJECT]
-    name : <project name, same name as the corresponding Jenkins job>
-    version : <job version>
-    arch : <build architecture>
-    deps : <build dependencies; repeat deps as many times as needed>
-    deps : <order matters, closer to the top means it will get built first>
 
 vim: filetype=markdown shiftwidth=2 tabstop=2
