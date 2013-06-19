@@ -1,16 +1,7 @@
 App-JenkBuilder
 
-The README is used to introduce the module and provide instructions on
-how to install the module, any machine dependencies it may have (for
-example C compilers and installed libraries) and any other information
-that should be provided before the module is installed.
-
-A README file is required for CPAN modules since CPAN extracts the README
-file from a module distribution so that people browsing the archive
-can use it to get an idea of the module's uses. It is usually a good idea
-to provide version information here so that people can decide whether
-fixes for the module are worth downloading.
-
+Runs Jenkins jobs specified in a configuration file in order to build an
+entire project.
 
 INSTALLATION
 
@@ -21,6 +12,36 @@ To install this module, run the following commands:
 	make test
 	make install
 
+USAGE
+
+    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
+      --url https://example.com/jenkins/job/chocolate-doom --verbose
+
+    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
+      --url https://example.com/jenkins/job/prboom --verbose
+
+    for JOB in $(echo libsdl libsdl-SDL_image libsdl-SDL_mixer
+      libsdl-SDL_net libsdl-SDL_ttf prboom); do
+      perl build_jenkins_project.pl \
+        --http-user=foo --http-pass=bar \
+        --host https://example.com/jenkins --job="${JOB}" --verbose;
+    done
+
+SAMPLE PROJECT MANIFEST FORMAT
+
+Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.  The job
+with the dependencies is an `App::JenkBuilder::Job` object.  Any
+dependencies of that job are also `App::JenkBuilder::Job` objects.
+
+
+    [PROJECT]
+    name : <project name, same name as the corresponding Jenkins job>
+    version : <job version>
+    arch : <build architecture>
+    deps : <build dependencies; repeat deps as many times as needed>
+    deps : <order matters, closer to the top means it will get built first>
+
+
 SUPPORT AND DOCUMENTATION
 
 After installing, you can find documentation for this module with the
@@ -30,17 +51,11 @@ perldoc command.
 
 You can also look for information at:
 
-    RT, CPAN's request tracker
-        http://rt.cpan.org/NoAuth/Bugs.html?Dist=App-JenkBuilder
+    Project homepage:
+      https://github.com/spicyjack/App-JenkBuilder
 
-    AnnoCPAN, Annotated CPAN documentation
-        http://annocpan.org/dist/App-JenkBuilder
-
-    CPAN Ratings
-        http://cpanratings.perl.org/d/App-JenkBuilder
-
-    Search CPAN
-        http://search.cpan.org/dist/App-JenkBuilder/
+    Project issues:
+      https://github.com/spicyjack/App-JenkBuilder/issues
 
 
 LICENSE AND COPYRIGHT
@@ -52,4 +67,3 @@ under the terms of either: the GNU General Public License as published
 by the Free Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
-
