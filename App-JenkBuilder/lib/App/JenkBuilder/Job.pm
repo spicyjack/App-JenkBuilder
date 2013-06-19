@@ -1,14 +1,9 @@
 package App::JenkBuilder::Job;
 use Moose;
-use Config::Std;
 
 =head1 NAME
 
-App::JenkBuilder::Job - A "job" in Jenkins.  This module describes a Jenkins
-job, including job name and parameters, so that you can initiate the job in
-Jenkins.  This is different from the L<Net::Jenkins::Job> object, which keeps
-track of the job that Jenkins runs, including job number(s), job history in
-Jenkins, and job build status.
+App::JenkBuilder::Job - Describes a Jenkins job
 
 =head1 VERSION
 
@@ -30,11 +25,18 @@ our $VERSION = '0.01';
     print q(Job: ) . $job->name() . q( has version ) . $job->version());
     ...
 
+=head1 DESCRIPTION
+
+This module describes a job that will be run under Jenkins, including job
+name and parameters.  This is different from the L<Net::Jenkins::Job> object,
+which keeps track of the actual job that Jenkins runs, including job
+number(s), job history in Jenkins, and job build status.
+
 =head1 OBJECT ATTRIBUTES
 
-=head2 project
+=head2 name
 
-C<App::JenkBuilder::Job> object that is the focus of the "project".
+The name of this job.
 
 =cut
 
@@ -43,27 +45,18 @@ has name => (
     isa => q(Str),
 );
 
-has versin => (
+=head2 version
+
+The version of the software that this job will build.
+
+=cut
+
+has version => (
     is  => q(rw),
     isa => q(Str),
 );
 
 =head1 OBJECT METHODS
-
-=head2 load_project
-
-=cut
-
-sub load {
-    my $self = shift;
-    my %args = @_;
-
-    die(q|Missing filename of project to load (filename => $filename)|)
-        unless ( defined $args{filename} );
-    die(q|Can't read project file|)
-        unless ( -r $args{filename} );
-
-}
 
 =head2 function2
 
