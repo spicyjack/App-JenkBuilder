@@ -1,6 +1,7 @@
 package App::JenkBuilder::Project;
 use Moose;
 use Config::Std;
+use App::JenkBuilder::Job;
 
 =head1 NAME
 
@@ -29,30 +30,48 @@ Describes how to build a set of Jenkins jobs.
 
 =head1 OBJECT ATTRIBUTES
 
-=head2 project
+=head2 project_job
 
 C<App::JenkBuilder::Job> object that is the focus of the "project".
 
 =cut
 
-has project => (
+has project_job => (
     is  => q(rw),
     isa => q(App::JenkBuilder::Job),
 );
 
-has dependent_jobs => (
+=head2 build_deps
+
+C<App::JenkBuilder::Job> objects that are required to build C<project_job>.
+
+=cut
+
+has build_deps => (
     is  => q(rw),
     isa => q(ArrayRef[App::JenkBuilder::Job]),
 );
 
-has _config => (
+=head2 build_arch
+
+Build architecture for building this project.  This value would be used to
+determine what cross-compilers (if any) to use when building individual jobs.
+
+=cut
+
+has build_arch => (
     is  => q(rw),
-    isa => q(Object),
+    isa => q(Str),
+);
+
+has _project_config => (
+    is  => q(rw),
+    isa => q(HashRef),
 );
 
 =head1 OBJECT METHODS
 
-=head2 load_project(config_file => $filename)
+=head2 load(config_file => $filename)
 
 Loads the file passed in as C<config_file> and tries to parse it.  The format
 of the configuration file is described in the
@@ -73,8 +92,32 @@ sub load {
     # load the config file from disk
     my %config;
     read_config($config_file => %config);
-    $self->_config(\%config);
-    $self->name = $config{name};
+    my %project = %{$config{PROJECT}};
+    #use Data::Dumper;
+    #print Dumper %project;
+    $self->_project_config(\%project);
+    my $project_job = App::JenkBuilder::Job->new(
+            name    => $project{name},
+            version => $project{version},
+    );
+    $self->project_job($project_job);
+    $self->build_arch($project{build_arch});
+    my @project_deps = @{$project{deps}};
+    my @build_deps;
+    foreach my $dep ( @project_deps ) {
+        my ($name, $version) = split(/,\s*/, $dep);
+        push(@build_deps,
+            App::JenkBuilder::Job->new(
+                name    => $name,
+                version => $version,
+            )
+        );
+    }
+    $self->build_deps(\@build_deps);
+    # FIXME what should be returned here?
+    # - number of dependencies?
+    # - project job?
+    return 1;
 }
 
 =head2 function2
