@@ -235,10 +235,6 @@ use Net::Jenkins;
         $config->set(q(poll-interval) => 5);
     }
 
-    my $job_config;
-    if ( $config->defined(q(job-config)) ) {
-        $job_config = JenkBuilder::Project->new();
-    }
     # set up the logger
     my $log_conf;
     if ( defined $config->get(q(verbose)) && $config->get(q(verbose)) > 1 ) {
@@ -266,6 +262,9 @@ use Net::Jenkins;
     Log::Log4perl::init( \$log_conf );
     my $log = get_logger("");
 
+    if ( $config->defined(q(job)) && $config->defined(q(project)) ) {
+        $log->logdie(q(Must use either --job or --project, not both));
+    }
     # print a nice banner
     $log->info(qq(Starting build_jenkins_project.pl, version $VERSION));
     $log->info(qq(My PID is $$));
@@ -343,6 +342,14 @@ use Net::Jenkins;
     # FIXME $summary will be undef if the request failed; check for it
     $log->warn(qq(Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
+
+    my @project_jobs;
+    my ($project, $job);
+    if ( $config->defined(q(project)) ) {
+        $project = JenkBuilder::Project->new();
+
+    }
+
     my $jenkins_job = Net::Jenkins::Job->new(
         api     => $jenkins,
         name    => $config->get(q(job)),
@@ -353,15 +360,14 @@ use Net::Jenkins;
     my $next_build_num = $jenkins_job->next_build_number();
     $log->warn($config->get(q(job)) . qq(: Next build number: $next_build_num));
 
-    # FIXME the PKG_NAME param needs to match the name of the job, or the
-    # Jenkins build scripts will probably break
-    my $post_json = <<'EOJ';
+    my $pkg_name = $config->get(q(job));
+    my $post_json = <<"EOJSON";
     {"parameter": [
-        {"name": "PKG_NAME", "value": "chocolate-doom"},
+        {"name": "PKG_NAME", "value": "$pkg_name"},
         {"name": "PKG_VERSION", "value": "1.7.0"},
-        {"name": "TARBALL_DIR", "value": "$HOME/source"}
+        {"name": "TARBALL_DIR", "value": "\$HOME/source"}
     ]}
-EOJ
+EOJSON
 
     my $response = $jenkins->post_url(
         $jenkins->job_url($config->get(q(job))
