@@ -44,10 +44,11 @@ on object methods and attributes.
     name : <project name, same name as the corresponding Jenkins job>
     version : <job version>
     build_arch : <build architecture>
-    deps : <build dependencies; repeat deps as many times as needed>
-    deps : <order matters, closer to the top means it will get built first>
+    deps : (build dependencies; repeat "deps" lines as many times as needed)
+    deps : (order matters, deps list gets built from top to bottom)
+    deps : (format of deps line: "deps: dep_name, dep_version")
     deps : <dep_job_name>, <dep_job_version>
-    deps : project-c, 1.00
+    deps : project-x, 1.00
 
 
 SUPPORT AND DOCUMENTATION
