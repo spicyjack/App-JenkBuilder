@@ -29,23 +29,31 @@ USAGE
 
 SAMPLE PROJECT MANIFEST FORMAT
 
-Using [Config::Std](https://metacpan.org/module/Config::Std) syntax.  The job
-with the dependencies is an `App::JenkBuilder::Job` object.  Any
-dependencies of that job are also `App::JenkBuilder::Job` objects.
+The "project manifest" uses
+[Config::Std](https://metacpan.org/module/Config::Std) syntax.  When the
+[App::JenkBuilder::Project](http://tinyurl.com/mprksdp) object loads the
+project manifest config file, it creates a
+[App::JenkBuilder::Job](http://tinyurl.com/mhglerb) object that represents the
+job that this project is trying to build.  Any dependencies of this job job
+are also stored in the `Project` object as `App::JenkBuilder::Job` objects.
+See the documentation for the `Project` and `Job` objects for more information
+on object methods and attributes.
 
 
     [PROJECT]
     name : <project name, same name as the corresponding Jenkins job>
     version : <job version>
-    arch : <build architecture>
+    build_arch : <build architecture>
     deps : <build dependencies; repeat deps as many times as needed>
     deps : <order matters, closer to the top means it will get built first>
+    deps : <dep_job_name>, <dep_job_version>
+    deps : project-c, 1.00
 
 
 SUPPORT AND DOCUMENTATION
 
-After installing, you can find documentation for this module with the
-perldoc command.
+After installing, you can find documentation for this module with the perldoc
+command.
 
     perldoc App::JenkBuilder
 
@@ -62,8 +70,8 @@ LICENSE AND COPYRIGHT
 
 Copyright (C) 2013 Brian Manning
 
-This program is free software; you can redistribute it and/or modify it
-under the terms of either: the GNU General Public License as published
-by the Free Software Foundation; or the Artistic License.
+This program is free software; you can redistribute it and/or modify it under
+the terms of either: the GNU General Public License as published by the Free
+Software Foundation; or the Artistic License.
 
 See http://dev.perl.org/licenses/ for more information.
