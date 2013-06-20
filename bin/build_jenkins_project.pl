@@ -28,21 +28,24 @@ our $VERSION = '0.01';
  -h|--help          Shows this help text
 
  Other script options:
- -c|--job-config    Path to config file that describes Jenkins job to run
- -s|--host|--server Hostname of the Jenkins server
+ -p|--project       Project file that describes Jenkins job(s) to run
+ -s|--host          Hostname of the Jenkins server
  -j|--job           Jenkins job to interact with
  -u|--http-user     HTTP Authentication user
- -p|--http-pass     HTTP Authentication password
+ -a|--http-pass     HTTP Authentication password
  --poll-duration    Poll the Jenkins API for job status at this interval
 
  Example usage:
 
  # build a Jenkins project based on the contents of 'config.txt'
- build_jenkins_project.pl --job-config /path/to/config.ini
+ build_jenkins_project.pl --project /path/to/project.ini
 
  # same, but handle HTTP authentication
  build_jenkins_project.pl --http-user=foo --http-pass=bar \
-    --job-config /path/to/config.ini
+    --project /path/to/project.ini
+
+ # build a Jenkins project based on the contents of 'config.txt'
+ build_jenkins_project.pl --job <job-name>
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
 build_jenkins_project.pl>.
@@ -55,11 +58,11 @@ our @options = (
     q(help|h),
     q(colorize),
     # other options
-    q(job-config|c=s),
+    q(project|p=s),
     q(job|j=s),
-    q(host|server|s=s),
+    q(server|s=s),
     q(http-user|u=s),
-    q(http-pass|p=s),
+    q(http-pass|a=s),
     q(poll-duration=i),
 );
 
@@ -69,42 +72,6 @@ B<build_jenkins_project.pl> - A Perl script template that uses the
 L<Log::Log4perl> logging module.
 
 =head1 OBJECTS
-
-=head2 JenkBuilder::Project
-
-An object used for storing information about a Jenkins "project", or a
-complete set of jobs that can make a final product.
-
-=head3 Object Methods
-
-=cut
-
-########################
-# JenkBuilder::Project #
-########################
-package JenkBuilder::Project;
-use strict;
-use warnings;
-use Config::Std;
-use Log::Log4perl qw(get_logger :no_extra_logdie_message);
-@ISA=qw(JenkBuilder::Config);
-
-=over
-
-=item new( )
-
-Creates the L<JenkBuilder::Project> object, and parses the job
-configuration file.
-
-=cut
-
-sub new {
-    my $class = shift;
-    my $self = bless ({}, $class);
-    my $log = get_logger();
-
-
-}
 
 =head2 JenkBuilder::Config
 
@@ -386,6 +353,8 @@ use Net::Jenkins;
     my $next_build_num = $jenkins_job->next_build_number();
     $log->warn($config->get(q(job)) . qq(: Next build number: $next_build_num));
 
+    # FIXME the PKG_NAME param needs to match the name of the job, or the
+    # Jenkins build scripts will probably break
     my $post_json = <<'EOJ';
     {"parameter": [
         {"name": "PKG_NAME", "value": "chocolate-doom"},
