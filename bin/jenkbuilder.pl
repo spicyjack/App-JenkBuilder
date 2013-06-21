@@ -417,7 +417,7 @@ use App::JenkBuilder::Project;
                 $log->logdie($response->status_line);
             }
         } else {
-            if ( ! $jenkins->build_job($job_name) ) {
+            if ( ! $jenkins->build_job_with_parameters($job_name) ) {
                 $log->logdie(qq(Job submission $job_name failed!));
             }
         }
