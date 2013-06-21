@@ -1,9 +1,7 @@
 # App::JenkBuilder TODOs ##
-- Generate this README or the regular docs from POD
+- Generate `README.md` or the regular docs from POD
 - Convert the `bin` file to use `Moose`, because both Jenkins modules use
   `Moose` already, so it's already available to be used
-- Get Jenkins version via one of the Jenkins Perl frameworks (`Net::Jenkins`
-  or `Jenkins::API`)
 - Come up with some kind of job manifest that tells this app what to build, and
   in what order to build it
   - Sourced/read by the Jenkins scripts prior to the script performing any
@@ -23,5 +21,11 @@
       - job dependencies that need to be built prior to this job
         - dependencies can also be disabled if it's know that the dependency
           jobs are already up to date
+      - *or* a list of jobs to run, in parallel, meaning their dependencies
+        are already up to date, and all that needs to be built is the
+        top-level jobs
 
+## Completed TODOs ##
+- Get Jenkins version via one of the Jenkins Perl frameworks (`Net::Jenkins`
+  or `Jenkins::API`)
 vim: filetype=markdown shiftwidth=2 tabstop=2
