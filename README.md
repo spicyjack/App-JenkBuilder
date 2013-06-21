@@ -1,9 +1,9 @@
-App-JenkBuilder
+# App::JenkBuilder #
 
 Runs Jenkins jobs specified in a configuration file in order to build an
 entire project.
 
-INSTALLATION
+# INSTALLATION #
 
 To install this module, run the following commands:
 
@@ -12,17 +12,17 @@ To install this module, run the following commands:
 	make test
 	make install
 
-USAGE
+# USAGE #
 
-    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
+    perl jenkbuilder.pl --http-user=foo --http-pass=bar \
       --url https://example.com/jenkins/job/chocolate-doom --verbose
 
-    perl build_jenkins_project.pl --http-user=foo --http-pass=bar \
+    perl jenkbuilder.pl --http-user=foo --http-pass=bar \
       --url https://example.com/jenkins/job/prboom --verbose
 
     for JOB in $(echo libsdl libsdl-SDL_image libsdl-SDL_mixer
       libsdl-SDL_net libsdl-SDL_ttf prboom); do
-      perl build_jenkins_project.pl \
+      perl jenkbuilder.pl \
         --http-user=foo --http-pass=bar \
         --host https://example.com/jenkins --job="${JOB}" --verbose;
     done
