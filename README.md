@@ -1,7 +1,7 @@
 App-JenkBuilder
 
 Runs Jenkins jobs specified in a configuration file in order to build an
-entire project.
+entire "project".
 
 INSTALLATION
 
