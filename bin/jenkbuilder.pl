@@ -60,7 +60,7 @@ our @options = (
     # other options
     q(project|p=s),
     q(job|j=s),
-    q(server|s=s),
+    q(host|s=s),
     q(http-user|u=s),
     q(http-pass|a=s),
     q(poll-duration=i),
@@ -214,6 +214,8 @@ use 5.010;
 use strict;
 use warnings;
 use utf8;
+
+# system modules
 use Carp;
 use Data::Dumper;
 $Data::Dumper::Indent = 1;
@@ -226,6 +228,10 @@ use LWP::UserAgent;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 use Log::Log4perl::Level;
 use Net::Jenkins;
+
+# local modules
+use App::JenkBuilder::Job;
+use App::JenkBuilder::Project;
 
     binmode(STDOUT, ":utf8");
     my $config = JenkBuilder::Config->new();
@@ -264,7 +270,10 @@ use Net::Jenkins;
 
     if ( $config->defined(q(job)) && $config->defined(q(project)) ) {
         $log->logdie(q(Must use either --job or --project, not both));
+    } elsif ( ! $config->defined(q(job)) && ! $config->defined(q(project)) ) {
+        $log->logdie(q(Script requires either --job or --project));
     }
+
     # print a nice banner
     $log->info(qq(Starting build_jenkins_project.pl, version $VERSION));
     $log->info(qq(My PID is $$));
@@ -344,100 +353,132 @@ use Net::Jenkins;
         . $jenkins->jenkins_version);
 
     my @project_jobs;
-    my ($project, $job);
+    my ($project, $project_job);
     if ( $config->defined(q(project)) ) {
-        $project = JenkBuilder::Project->new();
-
-    }
-
-    my $jenkins_job = Net::Jenkins::Job->new(
-        api     => $jenkins,
-        name    => $config->get(q(job)),
-        url     => $jenkins->job_url($config->get(q(job))),
-    );
-    $log->warn(qq(Retrieving job info from server;));
-    $log->warn(q( - ) .  $jenkins_job->url() );
-    my $next_build_num = $jenkins_job->next_build_number();
-    $log->warn($config->get(q(job)) . qq(: Next build number: $next_build_num));
-
-    my $pkg_name = $config->get(q(job));
-    my $post_json = <<"EOJSON";
-    {"parameter": [
-        {"name": "PKG_NAME", "value": "$pkg_name"},
-        {"name": "PKG_VERSION", "value": "1.7.0"},
-        {"name": "TARBALL_DIR", "value": "\$HOME/source"}
-    ]}
-EOJSON
-
-    my $response = $jenkins->post_url(
-        $jenkins->job_url($config->get(q(job))
-            . q(/buildWithParameters?delay=0sec),
-        json => $post_json),
-    );
-    if ( $response->code == HTTP_FOUND ) { # HTTP 302
-        $log->warn($config->get(q(job)) . q(: Job submission successful!));
-        $log->warn($config->get(q(job)) . q(: Waiting for job to start...));
-        if ( length($response->decoded_content()) > 0 ) {
-            print Dumper $response->decoded_content();
-        }
+        $project = App::JenkBuilder::Project->new();
+        $project->load(config_file => $config->get(q(project)));
+        @project_jobs = @{$project->build_deps};
+        push(@project_jobs, $project->project_job);
     } else {
-        $log->logdie($response->status_line);
+        $project_job = App::JenkBuilder::Job->new(name => $config->get(q(job)));
+        push(@project_jobs, $project_job);
     }
 
-    # Dump the first JSON response after the job is running
-    my $job_started = 0;
-    my $job_running_time = 0;
-    JOB_STATUS: while (1) {
-        # get the JSON message with the running job's details
-        my $job_status_json = $jenkins->get_job_details(
-            $config->get(q(job)) . qq(/$next_build_num)
-        );
-        if ( defined $job_status_json ) {
-            my %job_status = %{$job_status_json};
-            my $job_result = $job_status{result};
-            my $job_number = $job_status{number};
-            if ( defined $job_result ) {
-                $log->warn($config->get(q(job))
-                    . qq(: Job #$job_number complete; )
-                    . qq(result: $job_result));
-                # in milliseconds apparently
-                my $job_duration = $job_status{estimatedDuration} / 1000;
-                my ($duration_min, $duration_sec, $duration_string);
-                if ( $job_duration > 60 ) {
-                    $duration_min = int($job_duration / 60);
-                    $duration_sec = int($job_duration - ($duration_min * 60));
-                    $duration_string = "minutes";
-                } else {
-                    $duration_min = 0;
-                    $duration_sec = $job_duration;
-                    $duration_string = "seconds";
-                }
-                $log->warn($config->get(q(job)) . q(: Job duration: )
-                     . $duration_min . q(m )
-                     . $duration_sec . q(s));
-                last JOB_STATUS;
+    if ( $log->is_debug() ) {
+        foreach my $debug_job (@project_jobs) {
+            if ( defined $debug_job->version ) {
+                $log->debug(q(Job: ) . $debug_job->name
+                    . q(, version: ) . $debug_job->version);
             } else {
-                if ( ! $job_started ) {
-                    $log->warn($config->get(q(job))
-                        . qq(: Job #$job_number has started!));
-                    if ( $log->is_debug ) {
-                        $log->debug(Dumper $job_status_json);
-                    }
+                $log->debug(q(Job: ) . $debug_job->name . q(, no version));
+            }
+        }
+    }
+
+    foreach my $project_job ( @project_jobs ) {
+        my $job_name = $project_job->name;
+        my $jenkins_job = Net::Jenkins::Job->new(
+            api     => $jenkins,
+            name    => $project_job->name(),
+            url     => $jenkins->job_url($project_job->name),
+        );
+        $log->warn(qq(Retrieving job info from server;));
+        $log->warn(q( - ) .  $jenkins_job->url() );
+        my $next_build_num = $jenkins_job->next_build_number;
+        $log->warn($job_name . qq(: Next build number: $next_build_num));
+
+        # set up the JSON parameters string
+        # if the version for this job is not specified, don't add it to the
+        # JSON
+        # FIXME also need to figure out how to handle architecture
+        if ( defined $project_job->version ) {
+            my $post_json = q({"parameter": [);
+            $post_json .= q({"name": "PKG_VERSION", "value": ")
+                . $project_job->version . q("},);
+            $post_json .= q(]});
+# sample JSON chunk
+#            my $post_json = <<'EOJSON';
+#{"parameter": [
+#    {"name": "PKG_NAME", "value": "chocolate-doom"},
+#    {"name": "PKG_VERSION", "value": "1.7.0"},
+#    {"name": "TARBALL_DIR", "value": "$HOME/source"}
+#]}
+#EOJSON
+            my $response = $jenkins->post_url(
+                $jenkins->job_url(
+                $job_name . q(/buildWithParameters?delay=0sec),
+                json => $post_json),
+            );
+            if ( $response->code == HTTP_FOUND ) { # HTTP 302
+
+                if ( length($response->decoded_content()) > 0 ) {
+                    print Dumper $response->decoded_content();
                 }
-                $job_started = 1;
-                $log->info($config->get(q(job)) .
-                    qq|: Job #$job_number running (Elapsed: |
-                    . sprintf('% 3u', $job_running_time)
-                    . q|s)|);
+            } else {
+                $log->logdie($response->status_line);
             }
         } else {
-            $log->info($config->get(q(job)) . q(: Job has not started yet...));
+            if ( ! $jenkins->build_job($job_name) ) {
+                $log->logdie(qq(Job submission $job_name failed!));
+            }
         }
-        sleep $config->get(q(poll-interval));
-        $job_running_time += $config->get(q(poll-interval));
-        # do API requests here at intervals, and check 'result'
-        # https://jenkurl/jenkins/view/Doom/job/prboom/4/api/json?pretty=true
-        #last JOB_STATUS;
+
+        $log->warn($job_name . q(: Job submission successful!));
+        $log->warn($job_name . q(: Waiting for job to start...));
+
+        # Dump the first JSON response after the job is running
+        my $job_started = 0;
+        my $job_running_time = 0;
+        JOB_STATUS: while (1) {
+            # get the JSON message with the running job's details
+            my $job_status_json = $jenkins->get_job_details(
+                $job_name . qq(/$next_build_num)
+            );
+            if ( defined $job_status_json ) {
+                my %job_status = %{$job_status_json};
+                my $job_result = $job_status{result};
+                my $job_number = $job_status{number};
+                if ( defined $job_result ) {
+                    $log->warn($job_name . qq(: Job #$job_number complete; )
+                        . qq(result: $job_result));
+                    # in milliseconds apparently
+                    my $job_duration = $job_status{estimatedDuration} / 1000;
+                    my ($duration_min, $duration_sec, $duration_string);
+                    if ( $job_duration > 60 ) {
+                        $duration_min = int($job_duration / 60);
+                        $duration_sec = int($job_duration
+                            - ($duration_min * 60));
+                        $duration_string = "minutes";
+                    } else {
+                        $duration_min = 0;
+                        $duration_sec = $job_duration;
+                        $duration_string = "seconds";
+                    }
+                    $log->warn($job_name . q(: Job duration: )
+                         . $duration_min . q(m )
+                         . $duration_sec . q(s));
+                    last JOB_STATUS;
+                } else {
+                    # display this once, then set $job_started
+                    if ( ! $job_started ) {
+                        $log->warn($job_name
+                            . qq(: Job #$job_number has started!));
+                        if ( $log->is_debug ) {
+                            $log->debug(Dumper $job_status_json);
+                        }
+                    }
+                    $job_started = 1;
+                    $log->info($job_name .
+                        qq|: Job #$job_number running (Elapsed: |
+                        . sprintf('% 3u', $job_running_time)
+                        . q|s)|);
+                }
+            } else {
+                $log->info(qq($job_name: Job has not started yet...));
+            }
+            sleep $config->get(q(poll-interval));
+            $job_running_time += $config->get(q(poll-interval));
+        }
     }
 
 =head1 AUTHOR
