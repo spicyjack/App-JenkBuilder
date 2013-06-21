@@ -438,8 +438,13 @@ use App::JenkBuilder::Project;
                 my $job_result = $job_status{result};
                 my $job_number = $job_status{number};
                 if ( defined $job_result ) {
-                    $log->warn($job_name . qq(: Job #$job_number complete; )
-                        . qq(result: $job_result));
+                    if ( $job_result =~ /SUCCESS/ ) {
+                        $log->warn(qq($job_name: Job #$job_number complete; )
+                            . qq(result: $job_result));
+                    } else {
+                        $log->logdie(qq($job_name: Job #$job_number complete; )
+                            . qq(result: $job_result));
+                    }
                     # in milliseconds apparently
                     my $job_duration = $job_status{estimatedDuration} / 1000;
                     my ($duration_min, $duration_sec, $duration_string);
