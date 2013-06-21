@@ -30,24 +30,13 @@ Describes how to build a set of Jenkins jobs.
 
 =head1 OBJECT ATTRIBUTES
 
-=head2 project_job
+=head2 jobs
 
-C<App::JenkBuilder::Job> object that is the focus of the "project".
-
-=cut
-
-has project_job => (
-    is  => q(rw),
-    isa => q(App::JenkBuilder::Job),
-);
-
-=head2 build_deps
-
-C<App::JenkBuilder::Job> objects that are required to build C<project_job>.
+An array of C<App::JenkBuilder::Job> objects that are required to be built.
 
 =cut
 
-has build_deps => (
+has jobs => (
     is  => q(rw),
     isa => q(ArrayRef[App::JenkBuilder::Job]),
 );
@@ -84,7 +73,7 @@ sub load {
     my %args = @_;
 
     my $config_file = $args{config_file};
-    die(q|Missing filename of project to load (filename => $filename)|)
+    die(q|Missing filename of config file to load (config_file => $file)|)
         unless ( defined $config_file );
     die(qq|Can't read project file $config_file|)
         unless ( -r $config_file );
@@ -96,26 +85,20 @@ sub load {
     #use Data::Dumper;
     #print Dumper %project;
     $self->_project_config(\%project);
-    my $project_job = App::JenkBuilder::Job->new(
-            name    => $project{name},
-            version => $project{version},
-    );
-    $self->project_job($project_job);
     $self->build_arch($project{build_arch});
-    my @project_deps = @{$project{deps}};
-    my @build_deps;
+    my @project_deps = @{$project{job}};
+    my @jobs;
     foreach my $dep ( @project_deps ) {
         my ($name, $version) = split(/,\s*/, $dep);
-        push(@build_deps,
-            App::JenkBuilder::Job->new(
-                name    => $name,
-                version => $version,
-            )
+        push(@jobs, App::JenkBuilder::Job->new(
+                        name    => $name,
+                        version => $version,
+                    )
         );
     }
-    $self->build_deps(\@build_deps);
+    $self->jobs(\@jobs);
     # FIXME what should be returned here?
-    # - number of dependencies?
+    # - number of jobs to build?
     # - project job?
     return 1;
 }

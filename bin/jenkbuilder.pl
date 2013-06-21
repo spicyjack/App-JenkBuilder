@@ -352,20 +352,19 @@ use App::JenkBuilder::Project;
     $log->warn(qq(Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
 
-    my @project_jobs;
-    my ($project, $project_job);
+    my @build_jobs;
     if ( $config->defined(q(project)) ) {
-        $project = App::JenkBuilder::Project->new();
+        my $project = App::JenkBuilder::Project->new();
         $project->load(config_file => $config->get(q(project)));
-        @project_jobs = @{$project->build_deps};
-        push(@project_jobs, $project->project_job);
+        @build_jobs = @{$project->jobs};
     } else {
-        $project_job = App::JenkBuilder::Job->new(name => $config->get(q(job)));
-        push(@project_jobs, $project_job);
+        my $build_job = App::JenkBuilder::Job->new(
+            name => $config->get(q(job)));
+        push(@build_jobs, $build_job);
     }
 
     if ( $log->is_debug() ) {
-        foreach my $debug_job (@project_jobs) {
+        foreach my $debug_job (@build_jobs) {
             if ( defined $debug_job->version ) {
                 $log->debug(q(Job: ) . $debug_job->name
                     . q(, version: ) . $debug_job->version);
@@ -375,12 +374,12 @@ use App::JenkBuilder::Project;
         }
     }
 
-    foreach my $project_job ( @project_jobs ) {
-        my $job_name = $project_job->name;
+    foreach my $build_job ( @build_jobs ) {
+        my $job_name = $build_job->name;
         my $jenkins_job = Net::Jenkins::Job->new(
             api     => $jenkins,
-            name    => $project_job->name(),
-            url     => $jenkins->job_url($project_job->name),
+            name    => $build_job->name(),
+            url     => $jenkins->job_url($build_job->name),
         );
         $log->warn(qq(Retrieving job info from server;));
         $log->warn(q( - ) .  $jenkins_job->url() );
@@ -391,10 +390,10 @@ use App::JenkBuilder::Project;
         # if the version for this job is not specified, don't add it to the
         # JSON
         # FIXME also need to figure out how to handle architecture
-        if ( defined $project_job->version ) {
+        if ( defined $build_job->version ) {
             my $post_json = q({"parameter": [);
             $post_json .= q({"name": "PKG_VERSION", "value": ")
-                . $project_job->version . q("},);
+                . $build_job->version . q("},);
             $post_json .= q(]});
 # sample JSON chunk
 #            my $post_json = <<'EOJSON';
