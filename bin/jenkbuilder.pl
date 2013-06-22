@@ -217,10 +217,7 @@ use utf8;
 
 # system modules
 use Carp;
-use Data::Dumper;
-$Data::Dumper::Indent = 1;
-$Data::Dumper::Sortkeys = 1;
-$Data::Dumper::Terse = 1;
+use File::Basename;
 use HTTP::Headers;
 use HTTP::Status qw(:constants); # provides HTTP_* constants
 use JSON;
@@ -228,12 +225,19 @@ use LWP::UserAgent;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
 use Log::Log4perl::Level;
 use Net::Jenkins;
+use Time::HiRes qw(gettimeofday tv_interval);
+use Data::Dumper;
+$Data::Dumper::Indent = 1;
+$Data::Dumper::Sortkeys = 1;
+$Data::Dumper::Terse = 1;
 
 # local modules
 use App::JenkBuilder::Job;
 use App::JenkBuilder::Project;
 
+    my $start_time = [gettimeofday];
     binmode(STDOUT, ":utf8");
+    our $my_name = basename $0;
     my $config = JenkBuilder::Config->new();
 
     # set a default poll interval of 5 seconds
@@ -275,8 +279,8 @@ use App::JenkBuilder::Project;
     }
 
     # print a nice banner
-    $log->info(qq(Starting build_jenkins_project.pl, version $VERSION));
-    $log->info(qq(My PID is $$));
+    $log->info(qq($my_name: Starting, version $VERSION));
+    $log->info(qq($my_name: My PID is $$));
 
     my $jenkins_url_scheme = q(http);
     my $jenkins_host       = q(www.exmaple.com);
@@ -349,7 +353,7 @@ use App::JenkBuilder::Project;
     # Jenkins
     my $summary = $jenkins->summary();
     # FIXME $summary will be undef if the request failed; check for it
-    $log->warn(qq(Jenkins is online... Jenkins version: )
+    $log->warn(qq($my_name: Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
 
     my @build_jobs;
@@ -381,10 +385,10 @@ use App::JenkBuilder::Project;
             name    => $build_job->name(),
             url     => $jenkins->job_url($build_job->name),
         );
-        $log->warn(qq(Retrieving job info from server;));
-        $log->warn(q( - ) .  $jenkins_job->url() );
+        $log->warn(qq($my_name: Retrieving job info from server;));
+        $log->warn(qq($my_name: - ) .  $jenkins_job->url() );
         my $next_build_num = $jenkins_job->next_build_number;
-        $log->warn($job_name . qq(: Next build number: $next_build_num));
+        $log->warn(qq($job_name: Next build number: $next_build_num));
 
         # set up the JSON parameters string
         # if the version for this job is not specified, don't add it to the
@@ -422,8 +426,8 @@ use App::JenkBuilder::Project;
             }
         }
 
-        $log->warn($job_name . q(: Job submission successful!));
-        $log->warn($job_name . q(: Waiting for job to start...));
+        $log->warn(qq($job_name: Job submission successful!));
+        $log->warn(qq($job_name: Waiting for job to start...));
 
         # Dump the first JSON response after the job is running
         my $job_started = 0;
@@ -484,6 +488,10 @@ use App::JenkBuilder::Project;
             $job_running_time += $config->get(q(poll-interval));
         }
     }
+    $log->warn(qq($my_name: Successfully built ) . scalar(@build_jobs)
+        . q( in ) . sprintf(q(%0.1f), tv_interval($start_time, [gettimeofday]))
+        . q( seconds));
+
 
 =head1 AUTHOR
 
