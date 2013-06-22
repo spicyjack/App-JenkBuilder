@@ -235,7 +235,7 @@ $Data::Dumper::Terse = 1;
 use App::JenkBuilder::Job;
 use App::JenkBuilder::Project;
 
-    my $start_time = [gettimeofday];
+    my $script_start_time = [gettimeofday];
     binmode(STDOUT, ":utf8");
     our $my_name = basename $0;
     my $config = JenkBuilder::Config->new();
@@ -489,9 +489,9 @@ use App::JenkBuilder::Project;
         }
     }
     $log->warn(qq($my_name: Successfully built ) . scalar(@build_jobs)
-        . q( in ) . sprintf(q(%0.1f), tv_interval($start_time, [gettimeofday]))
-        . q( seconds));
-
+        . q( jobs));
+    $log->warn(qq($my_name: in ) . sprintf(q(%0.1f),
+            tv_interval($script_start_time, [gettimeofday])) . q( seconds));
 
 =head1 AUTHOR
 
