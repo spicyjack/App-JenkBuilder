@@ -28,9 +28,9 @@ our $VERSION = '0.01';
  -h|--help          Shows this help text
 
  Other script options:
- -p|--project       Project file that describes Jenkins job(s) to run
- -s|--host          Hostname of the Jenkins server
- -j|--job           Jenkins job to interact with
+ -s|--host          URL of the Jenkins server to interact with
+ -p|--project       Project file with a list of Jenkins job(s) to run
+ -j|--job           Single Jenkins job to run (without build params)
  -u|--http-user     HTTP Authentication user
  -a|--http-pass     HTTP Authentication password
  --poll-duration    Poll the Jenkins API for job status at this interval
@@ -38,14 +38,16 @@ our $VERSION = '0.01';
  Example usage:
 
  # build a Jenkins project based on the contents of 'config.txt'
- build_jenkins_project.pl --project /path/to/project.ini
+ build_jenkins_project.pl --project /path/to/project.ini \
+   --host http://www.example.com/jenkins
 
  # same, but handle HTTP authentication
  build_jenkins_project.pl --http-user=foo --http-pass=bar \
-    --project /path/to/project.ini
+    --project /path/to/project.ini --host http://www.example.com/jenkins
 
- # build a Jenkins project based on the contents of 'config.txt'
- build_jenkins_project.pl --job <job-name>
+ # build a single Jenkins job
+ build_jenkins_project.pl --host http://www.example.com/jenkins \
+   --job <job name>
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
 build_jenkins_project.pl>.
@@ -353,6 +355,10 @@ use App::JenkBuilder::Project;
     # Jenkins
     my $summary = $jenkins->summary();
     # FIXME $summary will be undef if the request failed; check for it
+    if ( ! defined $summary ) {
+        $log->fatal(q(Jenkins summary request failed ));
+        $log->logdie(q|(Can't connect to Jenkins server)|);
+    }
     $log->warn(qq($my_name: Jenkins is online... Jenkins version: )
         . $jenkins->jenkins_version);
 
@@ -399,14 +405,20 @@ use App::JenkBuilder::Project;
             $post_json .= q({"name": "PKG_VERSION", "value": ")
                 . $build_job->version . q("},);
             $post_json .= q(]});
-# sample JSON chunk
-#            my $post_json = <<'EOJSON';
-#{"parameter": [
-#    {"name": "PKG_NAME", "value": "chocolate-doom"},
-#    {"name": "PKG_VERSION", "value": "1.7.0"},
-#    {"name": "TARBALL_DIR", "value": "$HOME/source"}
-#]}
-#EOJSON
+
+=begin SAMPLE
+
+# sample JSON parameter list
+{"parameter": [
+    {"name": "PKG_NAME", "value": "chocolate-doom"},
+    {"name": "PKG_VERSION", "value": "1.7.0"},
+    {"name": "TARBALL_DIR", "value": "$HOME/source"}
+]}
+
+=end SAMPLE
+
+=cut
+
             my $response = $jenkins->post_url(
                 $jenkins->job_url(
                 $job_name . q(/buildWithParameters?delay=0sec),
