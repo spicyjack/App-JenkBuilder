@@ -393,15 +393,17 @@ use App::JenkBuilder::Project;
 
     foreach my $build_job ( @build_jobs ) {
         my $job_name = $build_job->name;
+        $log->warn(qq(=-=-= Now building job: $job_name =-=-=));
+
         my $jenkins_job = Net::Jenkins::Job->new(
             api     => $jenkins,
             name    => $build_job->name(),
             url     => $jenkins->job_url($build_job->name),
         );
-        $log->warn(qq($my_name: Retrieving job info from server;));
-        $log->warn(qq($my_name: - ) .  $jenkins_job->url() );
+        $log->warn(qq(Retrieving job info from server; job URL:));
+        $log->warn(q(- ) . $jenkins_job->url() );
         my $next_build_num = $jenkins_job->next_build_number;
-        $log->warn(qq($job_name: Next build number: $next_build_num));
+        $log->warn(qq(Next build number: $next_build_num));
 
         # set up the JSON parameters string
         # if the version for this job is not specified, don't add it to the
@@ -445,8 +447,8 @@ use App::JenkBuilder::Project;
             }
         }
 
-        $log->warn(qq($job_name: Job submission successful!));
-        $log->warn(qq($job_name: Waiting for job to start...));
+        $log->warn(qq(Job submission successful!));
+        $log->warn(qq(Waiting for job to start...));
 
         # Dump the first JSON response after the job is running
         my $job_started = 0;
@@ -461,12 +463,10 @@ use App::JenkBuilder::Project;
                 my $job_result = $job_status{result};
                 my $job_number = $job_status{number};
                 if ( defined $job_result ) {
-                    if ( $job_result =~ /SUCCESS/ ) {
-                        $log->warn(qq($job_name: Job #$job_number complete; )
-                            . qq(result: $job_result));
-                    } else {
-                        $log->logdie(qq($job_name: Job #$job_number complete; )
-                            . qq(result: $job_result));
+                    $log->warn(qq(Job '$job_name' #$job_number complete; ));
+                    $log->warn(qq(Job result: '$job_result'));
+                    if ( $job_result !~ /SUCCESS/ ) {
+                        $log->logdie(qq(Job '$job_name' #$job_number failed!));
                     }
                     # in milliseconds apparently
                     my $job_duration = $job_status{estimatedDuration} / 1000;
@@ -481,27 +481,25 @@ use App::JenkBuilder::Project;
                         $duration_sec = $job_duration;
                         $duration_string = "seconds";
                     }
-                    $log->warn($job_name . q(: Job duration: )
+                    $log->warn(q(Job duration: )
                          . $duration_min . q(m )
                          . $duration_sec . q(s));
                     last JOB_STATUS;
                 } else {
                     # display this once, then set $job_started
                     if ( ! $job_started ) {
-                        $log->warn($job_name
-                            . qq(: Job #$job_number has started!));
+                        $log->warn(qq(Job #$job_number has started!));
                         if ( $log->is_debug ) {
                             $log->debug(Dumper $job_status_json);
                         }
                     }
                     $job_started = 1;
-                    $log->info($job_name .
-                        qq|: Job #$job_number running (Elapsed: |
+                    $log->info(qq|Job #$job_number running (Elapsed: |
                         . sprintf('% 3u', $job_running_time)
                         . q|s)|);
                 }
             } else {
-                $log->info(qq($job_name: Job has not started yet...));
+                $log->info(qq(Job has not started yet...));
             }
             sleep $config->get(q(poll-interval));
             $job_running_time += $config->get(q(poll-interval));
