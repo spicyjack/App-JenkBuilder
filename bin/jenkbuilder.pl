@@ -358,6 +358,7 @@ use App::JenkBuilder::Project;
     # FIXME $summary will be undef if the request failed; check for it
     if ( ! defined $summary ) {
         $log->fatal(q(Jenkins summary request failed ));
+        $log->fatal(q(Server response was: ) . $jenkins->request_error);
         $log->logdie(q|(Can't connect to Jenkins server)|);
     }
     $log->warn(qq($my_name: Jenkins is online... Jenkins version: )
