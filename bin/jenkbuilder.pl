@@ -56,7 +56,8 @@ build_jenkins_project.pl>.
 
 our @options = (
     # script options
-    q(verbose|v+),
+    q(debug),
+    q(verbose),
     q(help|h),
     q(colorize),
     # other options
@@ -249,9 +250,9 @@ use App::JenkBuilder::Project;
 
     # set up the logger
     my $log_conf;
-    if ( defined $config->get(q(verbose)) && $config->get(q(verbose)) > 1 ) {
+    if ( $config->defined(q(debug)) ) {
         $log_conf = qq(log4perl.rootLogger = DEBUG, Screen\n);
-    } elsif ( $config->get(q(verbose)) && $config->get(q(verbose)) == 1) {
+    } elsif ( $config->defined(q(verbose)) ) {
         $log_conf = qq(log4perl.rootLogger = INFO, Screen\n);
     } else {
         $log_conf = qq(log4perl.rootLogger = WARN, Screen\n);
