@@ -223,6 +223,7 @@ use Carp;
 use File::Basename;
 use HTTP::Headers;
 use HTTP::Status qw(:constants); # provides HTTP_* constants
+use IO::Socket::SSL;
 use JSON;
 use LWP::UserAgent;
 use Log::Log4perl qw(get_logger :no_extra_logdie_message);
@@ -349,6 +350,10 @@ use App::JenkBuilder::Project;
     if ( defined $http_headers ) {
         my $ua = $jenkins->user_agent;
         $ua->default_headers($http_headers);
+        $ua->ssl_opts(
+            SSL_verify_mode => IO::Socket::SSL::SSL_VERIFY_NONE,
+            verify_hostname => 0,
+        );
         $jenkins->user_agent($ua);
     }
 
