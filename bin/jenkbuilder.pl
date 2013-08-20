@@ -264,7 +264,7 @@ use App::JenkBuilder::Project;
     } else {
         $log_conf .= qq(log4perl.appender.Screen = )
             . qq(Log::Log4perl::Appender::Screen\n);
-    } # if ( $Config->get(q(o_colorlog)) )
+    }
 
     $log_conf .= qq(log4perl.appender.Screen.stderr = 1\n)
         . qq(log4perl.appender.Screen.utf8 = 1\n)
