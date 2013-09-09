@@ -391,19 +391,28 @@ use App::JenkBuilder::Project;
         }
     }
 
-    foreach my $build_job ( @build_jobs ) {
+    BUILD_JOB: foreach my $build_job ( @build_jobs ) {
         my $job_name = $build_job->name;
         $log->warn(qq(=-=-= Now building job: $job_name =-=-=));
 
         my $jenkins_job = Net::Jenkins::Job->new(
             api     => $jenkins,
-            name    => $build_job->name(),
+            name    => $build_job->name,
             url     => $jenkins->job_url($build_job->name),
         );
         $log->warn(qq(Retrieving job info from server; job URL:));
         $log->warn(q(- ) . $jenkins_job->url() );
         my $next_build_num = $jenkins_job->next_build_number;
-        $log->warn(qq(Next build number: $next_build_num));
+        if ( defined $next_build_num ) {
+            $log->warn(qq(Next build number: $next_build_num));
+        } else {
+            $log->error(q(Problem retrieving next build number for ')
+                . $build_job->name . q('));
+            # problems with Net::Jenkins requests set 'request_error';
+            # check it now
+            $log->error(q(Jenkins request error: ) . $jenkins->request_error);
+            next BUILD_JOB;
+        }
 
         # set up the JSON parameters string
         # if the version for this job is not specified, don't add it to the
@@ -434,7 +443,6 @@ use App::JenkBuilder::Project;
                 json => $post_json),
             );
             if ( $response->code == HTTP_FOUND ) { # HTTP 302
-
                 if ( length($response->decoded_content()) > 0 ) {
                     print Dumper $response->decoded_content();
                 }
