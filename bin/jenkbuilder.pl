@@ -442,7 +442,7 @@ use App::JenkBuilder::Project;
                 $job_name . q(/buildWithParameters?delay=0sec),
                 json => $post_json),
             );
-            if ( $response->code == HTTP_FOUND ) { # HTTP 302
+            if ( $response->is_success ) {
                 if ( length($response->decoded_content()) > 0 ) {
                     print Dumper $response->decoded_content();
                 }
