@@ -366,8 +366,8 @@ use App::JenkBuilder::Project;
         $log->fatal(q(Server response was: ) . $jenkins->request_error);
         $log->logdie(q|(Can't connect to Jenkins server)|);
     }
-    $log->warn(qq($my_name: Jenkins is online... Jenkins version: )
-        . $jenkins->jenkins_version);
+    $log->warn(qq($my_name: Jenkins is online!));
+    $log->warn(qq(Jenkins version: ) . $jenkins->jenkins_version);
 
     my @build_jobs;
     if ( $config->defined(q(project)) ) {
