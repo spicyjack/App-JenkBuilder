@@ -2,7 +2,7 @@ Changes
 MANIFEST
 Makefile.PL
 README
-bin/build_jenkins_project.pl
+bin/jenkbuilder
 lib/App/JenkBuilder.pm
 lib/App/JenkBuilder/Project.pm
 t/00-load.t
