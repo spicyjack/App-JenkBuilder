@@ -421,7 +421,7 @@ use App::JenkBuilder::Project;
         if ( defined $build_job->version ) {
             my $post_json = q({"parameter": [);
             $post_json .= q({"name": "PKG_VERSION", "value": ")
-                . $build_job->version . q("},);
+                . $build_job->version . q("});
             $post_json .= q(]});
 
 =begin SAMPLE
