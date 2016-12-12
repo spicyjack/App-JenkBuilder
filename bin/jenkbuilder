@@ -8,20 +8,20 @@
 
 =head1 NAME
 
-B<build_jenkins_project.pl> - A Perl script template that uses the
+B<jenkbuilder> - A Perl script template that uses the
 L<Log::Log4perl> logging module.
 
 =head1 VERSION
 
-Version 0.01
+Version 0.02
 
 =cut
 
-our $VERSION = '0.01';
+our $VERSION = '0.02';
 
 =head1 SYNOPSIS
 
- perl build_jenkins_project.pl [OPTIONS]
+ perl jenkbuilder [OPTIONS]
 
  Script options:
  -v|--verbose       Verbose script execution
@@ -31,6 +31,7 @@ our $VERSION = '0.01';
  -s|--host          URL of the Jenkins server to interact with
  -p|--project       Project file with a list of Jenkins job(s) to run
  -j|--job           Single Jenkins job to run (without build params)
+ -n|--version       Version number of --job to build
  -u|--http-user     HTTP Authentication user
  -a|--http-pass     HTTP Authentication password
  --poll-duration    Poll the Jenkins API for job status at this interval
@@ -38,31 +39,32 @@ our $VERSION = '0.01';
  Example usage:
 
  # build a Jenkins project based on the contents of 'config.txt'
- build_jenkins_project.pl --project /path/to/project.ini \
+ jenkbuilder --project /path/to/project.ini \
    --host http://www.example.com/jenkins
 
  # same, but handle HTTP authentication
- build_jenkins_project.pl --http-user=foo --http-pass=bar \
+ jenkbuilder --http-user=foo --http-pass=bar \
     --project /path/to/project.ini --host http://www.example.com/jenkins
 
  # build a single Jenkins job
- build_jenkins_project.pl --host http://www.example.com/jenkins \
-   --job <job name>
+ jenkbuilder --host http://www.example.com/jenkins \
+   --job <job name> --version <version number>
 
 You can view the full C<POD> documentation of this file by calling C<perldoc
-build_jenkins_project.pl>.
+jenkbuilder>.
 
 =cut
 
 our @options = (
     # script options
-    q(debug),
-    q(verbose),
+    q(debug|d),
+    q(verbose|v),
     q(help|h),
-    q(colorize),
+    q(colorize|c),
     # other options
     q(project|p=s),
     q(job|j=s),
+    q(version|n=s),
     q(host|s=s),
     q(http-user|u=s),
     q(http-pass|a=s),
@@ -71,7 +73,7 @@ our @options = (
 
 =head1 DESCRIPTION
 
-B<build_jenkins_project.pl> - A Perl script template that uses the
+B<jenkbuilder> - A Perl script template that uses the
 L<Log::Log4perl> logging module.
 
 =head1 OBJECTS
@@ -375,9 +377,23 @@ use App::JenkBuilder::Project;
         $project->load(config_file => $config->get(q(project)));
         @build_jobs = @{$project->jobs};
     } else {
-        my $build_job = App::JenkBuilder::Job->new(
-            name => $config->get(q(job)));
-        push(@build_jobs, $build_job);
+       my ($job_name, $job_version);
+       if ( ! $config->defined(q(job)) ) {
+          $log->logdie(q(Missing name of job to run, as '--job'));
+       } else {
+          $job_name = $config->get(q(job));
+       }
+       my $build_job;
+       if ( $config->defined(q(version)) ) {
+         $job_version = $config->get(q(version));
+         $build_job = App::JenkBuilder::Job->new(
+            name    => $job_name,
+            version => $job_version,
+         );
+       } else {
+         $build_job = App::JenkBuilder::Job->new( name => $job_name );
+       }
+       push(@build_jobs, $build_job);
     }
 
     if ( $log->is_debug() ) {
@@ -437,6 +453,7 @@ use App::JenkBuilder::Project;
 
 =cut
 
+            $log->debug(qq(POST parameters: $post_json));
             my $response = $jenkins->post_url(
                 $jenkins->job_url(
                 $job_name . q(/buildWithParameters?delay=0sec),
@@ -533,7 +550,7 @@ C<< <https://github.com/spicyjack/App-JenkBuilder/issues> >>
 
 You can find documentation for this script with the perldoc command.
 
-    perldoc build_jenkins_project.pl
+    perldoc jenkbuilder
 
 =head1 COPYRIGHT & LICENSE
 
